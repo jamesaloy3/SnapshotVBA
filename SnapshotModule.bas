@@ -58,13 +58,13 @@ Private Sub EnsureSnapHeaderNames(ws As Worksheet)
     ' Month number from full month (1..12)
     ' Month number from full month text (handles "June" or "Jun", ignores extra spaces)
 On Error Resume Next: ThisWorkbook.Names("Snap_MonthNum").Delete: On Error GoTo 0
-ThisWorkbook.Names.Add name:="Snap_MonthNum", _
-    refersTo:="=MONTH(DATEVALUE(""1 ""&TRIM(Snap_MonthFull)))"
+ThisWorkbook.Names.Add Name:="Snap_MonthNum", _
+    RefersTo:="=MONTH(DATEVALUE(""1 ""&TRIM(Snap_MonthFull)))"
 
 ' Three-letter token for SP (e.g., "Jun") built from the parsed month + the chosen year
 On Error Resume Next: ThisWorkbook.Names("Snap_MonthMMM").Delete: On Error GoTo 0
-ThisWorkbook.Names.Add name:="Snap_MonthMMM", _
-    refersTo:="=TEXT(DATE(Snap_YearNum,Snap_MonthNum,1),""MMM"")"
+ThisWorkbook.Names.Add Name:="Snap_MonthMMM", _
+    RefersTo:="=TEXT(DATE(Snap_YearNum,Snap_MonthNum,1),""MMM"")"
 
 End Sub
 
@@ -1055,9 +1055,9 @@ Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict
                 Dim nm As String: nm = "Codes_" & SanitizeName(fund)
                 On Error Resume Next: ThisWorkbook.Names(nm).Delete: On Error GoTo 0
                 If r > startR Then
-                    ThisWorkbook.Names.Add name:=nm, refersTo:=wsH.Range(wsH.Cells(startR, 1), wsH.Cells(r - 1, 1))
+                    ThisWorkbook.Names.Add Name:=nm, RefersTo:=wsH.Range(wsH.Cells(startR, 1), wsH.Cells(r - 1, 1))
                 Else
-                    ThisWorkbook.Names.Add name:=nm, refersTo:=wsH.Range("A1:A1")
+                    ThisWorkbook.Names.Add Name:=nm, RefersTo:=wsH.Range("A1:A1")
                 End If
 
                 r = r + 1
@@ -1074,9 +1074,9 @@ Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict
     Next key
     On Error Resume Next: ThisWorkbook.Names("Codes_TotalManaged").Delete: On Error GoTo 0
     If managedSet.Count > 0 Then
-        ThisWorkbook.Names.Add name:="Codes_TotalManaged", refersTo:=wsH.Range(wsH.Cells(startM, 1), wsH.Cells(r - 1, 1))
+        ThisWorkbook.Names.Add Name:="Codes_TotalManaged", RefersTo:=wsH.Range(wsH.Cells(startM, 1), wsH.Cells(r - 1, 1))
     Else
-        ThisWorkbook.Names.Add name:="Codes_TotalManaged", refersTo:=wsH.Range("A1:A1")
+        ThisWorkbook.Names.Add Name:="Codes_TotalManaged", RefersTo:=wsH.Range("A1:A1")
     End If
 
     ' Spacer
@@ -1090,9 +1090,9 @@ Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict
     Next key
     On Error Resume Next: ThisWorkbook.Names("Codes_TotalPortfolio").Delete: On Error GoTo 0
     If allSet.Count > 0 Then
-        ThisWorkbook.Names.Add name:="Codes_TotalPortfolio", refersTo:=wsH.Range(wsH.Cells(startP, 1), wsH.Cells(r - 1, 1))
+        ThisWorkbook.Names.Add Name:="Codes_TotalPortfolio", RefersTo:=wsH.Range(wsH.Cells(startP, 1), wsH.Cells(r - 1, 1))
     Else
-        ThisWorkbook.Names.Add name:="Codes_TotalPortfolio", refersTo:=wsH.Range("A1:A1")
+        ThisWorkbook.Names.Add Name:="Codes_TotalPortfolio", RefersTo:=wsH.Range("A1:A1")
     End If
 
     ' Manager code lists
@@ -1120,9 +1120,9 @@ Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict
                 Dim nmMgr As String: nmMgr = "CodesMgr_" & SanitizeName(mgr)
                 On Error Resume Next: ThisWorkbook.Names(nmMgr).Delete: On Error GoTo 0
                 If r > startR2 Then
-                    ThisWorkbook.Names.Add name:=nmMgr, refersTo:=wsH.Range(wsH.Cells(startR2, 1), wsH.Cells(r - 1, 1))
+                    ThisWorkbook.Names.Add Name:=nmMgr, RefersTo:=wsH.Range(wsH.Cells(startR2, 1), wsH.Cells(r - 1, 1))
                 Else
-                    ThisWorkbook.Names.Add name:=nmMgr, refersTo:=wsH.Range("A1:A1")
+                    ThisWorkbook.Names.Add Name:=nmMgr, RefersTo:=wsH.Range("A1:A1")
                 End If
                 r = r + 1
             End If
@@ -1365,7 +1365,7 @@ Private Sub AddOrReplaceName(nm As String, tgt As Range)
     On Error Resume Next
     ThisWorkbook.Names(nm).Delete
     On Error GoTo 0
-    ThisWorkbook.Names.Add name:=nm, refersTo:=tgt
+    ThisWorkbook.Names.Add Name:=nm, RefersTo:=tgt
 End Sub
 
 
@@ -1547,8 +1547,8 @@ Private Sub EnsureNamesForInput()
 
     ' MonthNum as formula: MATCH() over an inline month list
     On Error Resume Next: ThisWorkbook.Names("MonthNum").Delete: On Error GoTo 0
-    ThisWorkbook.Names.Add name:="MonthNum", _
-        refersTo:="=MATCH(Input!B1,{""January"",""February"",""March"",""April"",""May"",""June"",""July"",""August"",""September"",""October"",""November"",""December""},0)"
+    ThisWorkbook.Names.Add Name:="MonthNum", _
+        RefersTo:="=MATCH(Input!B1,{""January"",""February"",""March"",""April"",""May"",""June"",""July"",""August"",""September"",""October"",""November"",""December""},0)"
 End Sub
 Private Sub KillAllSheetScoped(ByVal nm As String)
     Dim sh As Worksheet
