@@ -36,7 +36,7 @@ A VBA macro suite that builds a portfolio “Snapshot” report for hotel assets
   * **Total Portfolio** (all properties).
 * Automatically generates/maintains:
 
-  * An **Input** sheet (month/year selectors + a **Build Snapshot** button).
+* An **Input** sheet (month/year selectors plus **Generate Report** and **Export to PDF** buttons).
   * A **USALI Map** sheet to translate human-friendly metric labels into tenant-specific USALI strings.
   * A hidden **Helper** sheet that stores named ranges of property codes per fund for aggregate queries.
   * All required workbook **Named Ranges**, while removing sheet-scoped duplicates that cause “shadowing.”
@@ -61,7 +61,7 @@ A VBA macro suite that builds a portfolio “Snapshot” report for hotel assets
 ## Sheets this macro creates/uses
 
 * **`Snapshot`** (report output): created if missing, cleared and rebuilt on each run.
-* **`Input`** (user controls): created if missing; holds Month/Year selectors and a **Build Snapshot** button.
+* **`Input`** (user controls): created if missing; holds Month/Year selectors and two buttons: **Generate Report** and **Export to PDF**.
 * **`USALI Map`** (editable mapping): created/updated to map display metrics → tenant USALI strings. Flags missing codes.
 * **`Helper`** (hidden): holds named ranges of codes by fund and totals:
 
@@ -111,11 +111,12 @@ Data cells are formulas to `SP.FINANCIALS` (property-level) or `SP.FINANCIALS_AG
 
 1. **Open** the workbook that contains **`My Properties`** and **`Usali Reference`**.
 2. **Enable macros** and ensure you’re **logged into SinglePane**.
-3. If this is your first run, execute **`BuildFormatRun`** from the Macro dialog *or* go to the **Input** sheet and press **Build Snapshot**.
+3. If this is your first run, execute **`BuildFormatRun`** from the Macro dialog *or* go to the **Input** sheet and press **Generate Report**.
 
    * First run auto-creates **Input**, **USALI Map**, **Helper**, and required **Named Ranges**.
 4. On the **Input** sheet, pick the **Month** (full name dropdown) and **Year**.
-5. Press **Build Snapshot** again any time you change Month/Year.
+5. Press **Generate Report** again any time you change Month/Year.
+6. Use **Export to PDF** to save the current snapshot as a PDF file.
 
 > You can also run **`BuildSnapshot`** directly (it builds all three tables).
 > **`BuildFormatRun`** = Auto-setup + Build + Final formatting.
@@ -306,4 +307,4 @@ A: The **Helper** sheet. The macro writes hotel **Codes** per Fund into blocks n
 
 ---
 
-**That’s it!** Drop this module into your workbook, confirm the two source sheets, pick your Month/Year on **Input**, and click **Build Snapshot**.
+**That’s it!** Drop this module into your workbook, confirm the two source sheets, pick your Month/Year on **Input**, and click **Generate Report**. When you're ready to share, use **Export to PDF** to create a snapshot file.
