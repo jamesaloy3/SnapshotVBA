@@ -28,6 +28,7 @@ A VBA macro suite that builds a portfolio “Snapshot” report for hotel assets
 ## What this does
 
 * Builds a fully formatted **Snapshot** worksheet with three stacked tables: **MTD**, **YTD**, **FY**.
+* Appends an **STR performance** section with MTD, YTD and Running 12‑Month metrics (Occ, MPI/ARI/RGI and Change).
 * Groups hotels **by Fund**; within each fund, properties are **sorted by Hotel name**.
 * Adds **Fund Subtotal** rows and two portfolio lines:
 
@@ -161,20 +162,24 @@ Data cells are formulas to `SP.FINANCIALS` (property-level) or `SP.FINANCIALS_AG
 
 ## USALI Map: display names → USALI codes
 
-* The **`USALI Map`** sheet contains three columns:
+* The **`USALI Map`** sheet contains two mapping blocks:
 
-  1. `DisplayMetric`
-  2. `USALI`
-  3. `Notes` (flags “NOT FOUND in Usali Reference” if a mapping isn’t present in your tenant’s reference)
+  * Columns **A:C** mirror the traditional USALI mapping with headers:
+    1. `DisplayMetric`
+    2. `USALI`
+    3. `Notes` (flags “NOT FOUND in Usali Reference” if a mapping isn’t present in your tenant’s reference)
+  * Columns **E:F** provide an editable map for **STR metrics** (`STR_Display` → `STR_Code`).
 * The report headers use `DisplayMetric` (friendly names). Each data cell looks up the **USALI** code via:
 
   ```text
   XLOOKUP(<header cell>, UsaliMap_Display, UsaliMap_Code)
   ```
-* **Add/edit rows freely** (keep the two named ranges bound to the columns). The builder refreshes names every run:
+* **Add/edit rows freely** (keep the named ranges bound to the columns). The builder refreshes names every run:
 
   * `UsaliMap_Display` → column A
   * `UsaliMap_Code` → column B
+  * `StrMap_Display` → column E
+  * `StrMap_Code` → column F
 
 > Tip: If you rename or add metrics in `MetricsList()`, be sure the `DisplayMetric` text in the header appears in `USALI Map` with the correct tenant-specific USALI string.
 

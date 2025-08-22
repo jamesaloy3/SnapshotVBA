@@ -8,7 +8,7 @@ Option Explicit
 '   - Sheets: "My Properties" and "Usali Reference" with spilled arrays at A1#
 '   - SinglePane add-in installed and logged in
 '   - Creates/uses: "Snapshot" (report), "USALI Map" (metric mapping), "Helper" (hidden code lists)
-'   - Only user input: Month (1–12) on Snapshot!B1; Year on Snapshot!B2 (defaults to YEAR(TODAY()))
+'   - Only user input: Month (1â€“12) on Snapshot!B1; Year on Snapshot!B2 (defaults to YEAR(TODAY()))
 ' ===========================
 
 Private Const SH_PROPS As String = "My Properties"
@@ -19,12 +19,15 @@ Private Const SH_MAP As String = "USALI Map"
 
 Private Const NAME_USALI_DISPLAY As String = "UsaliMap_Display"
 Private Const NAME_USALI_CODE As String = "UsaliMap_Code"
+Private Const NAME_STR_DISPLAY As String = "StrMap_Display"
+Private Const NAME_STR_CODE As String = "StrMap_Code"
 Private Const NAME_MONTHNUM As String = "MonthNum"
 Private Const NAME_YEARNUM As String = "YearNum"
 Private Const NF_CURR As String = "_($* #,##0_);_($* (#,##0);_($* ""-""_);_(@_)"
 Private Const NF_CURR_K As String = "_($* #,##0,_) ;_($* (#,##0,)_);_($* ""-""_) ;_(@_)"
 Private Const NF_PCT As String = "0.0%"
 Private Const NF_PCT_SIGN As String = "+0.0%;-0.0%;0.0%"
+Private Const NF_DEC As String = "0.0"
 
 
 Private Const FUND_EXCLUDE As String = "Stonebridge Legacy"  ' put this Fund last + exclude from Managed portfolio total
@@ -73,6 +76,14 @@ End Function
 
 Private Function MetricIsThousands(metric As String) As Boolean
     MetricIsThousands = (UCase$(metric) = "TOTAL REV (000'S)" Or UCase$(metric) = "NOI (000'S)")
+End Function
+
+Private Function StrMetricIsPercent(metric As String) As Boolean
+    StrMetricIsPercent = (UCase$(metric) = "OCC" Or InStr(1, metric, "%", vbTextCompare) > 0)
+End Function
+
+Private Function StrMetricIsCurrency(metric As String) As Boolean
+    StrMetricIsCurrency = (UCase$(metric) = "ADR" Or UCase$(metric) = "REVPAR")
 End Function
 
 Private Sub SortVariantStringArray(ByRef arr As Variant)
@@ -179,6 +190,111 @@ Private Sub WriteTwoRowHeader(ws As Worksheet, topRow As Long, mode As String, s
     ws.Columns(3).ColumnWidth = 9  ' Rooms
     ws.Columns(4).ColumnWidth = 18 ' Manager
     ws.Columns(5).Hidden = True    ' Code (hidden)
+End Sub
+
+Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, lastCol As Long)
+    Const RED_HEX As String = "E03C31"
+    Dim red&: red = ColorHex(RED_HEX)
+
+    Dim hdr1 As Range, hdr2 As Range
+    Set hdr1 = ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow, lastCol))
+    Set hdr2 = ws.Range(ws.Cells(topRow + 1, 2), ws.Cells(topRow + 1, lastCol))
+
+    With hdr1
+        .Interior.Color = red: .Font.Color = vbWhite: .Font.Bold = True: .Font.Size = 13
+        .RowHeight = 18
+    End With
+    With hdr2
+        .Interior.Color = red: .Font.Color = vbWhite: .Font.Bold = True: .Font.Size = 13
+        .RowHeight = 35: .WrapText = True
+    End With
+
+    ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow + 1, 2)).Merge
+    ws.Range(ws.Cells(topRow, 3), ws.Cells(topRow + 1, 3)).Merge
+    ws.Range(ws.Cells(topRow, 4), ws.Cells(topRow + 1, 4)).Merge
+    ws.Cells(topRow, 2).Value = "Hotel"
+    ws.Cells(topRow, 3).Value = "Rooms"
+    ws.Cells(topRow, 4).Value = "Manager"
+    With ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow + 1, 4))
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlCenter
+    End With
+
+    Dim secLabels As Variant, secMetrics As Variant
+    secLabels = Array("MTD STR Data", "YTD", "Running 12 Month")
+    secMetrics = Array( _
+        Array("Occ", "MPI", "Change", "ADR", "ARI", "Change", "RevPAR", "RGI", "Change"), _
+        Array("MPI", "Change", "ARI", "Change", "RGI", "Change"), _
+        Array("MPI", "Change", "ARI", "Change", "RGI", "Change"))
+
+    Dim i&, start&, j&
+    start = startCol
+    For i = LBound(secLabels) To UBound(secLabels)
+        Dim metrics As Variant: metrics = secMetrics(i)
+        Dim mUB&, mLB&: mLB = LBound(metrics): mUB = UBound(metrics)
+        Dim secStart&, secEnd&
+        secStart = start
+        secEnd = start + (mUB - mLB)
+        ws.Range(ws.Cells(topRow, secStart), ws.Cells(topRow, secEnd)).ClearContents
+        ws.Cells(topRow, secStart).Value = secLabels(i)
+        With ws.Range(ws.Cells(topRow, secStart), ws.Cells(topRow, secEnd))
+            .MergeCells = False
+            .HorizontalAlignment = xlCenterAcrossSelection
+            .VerticalAlignment = xlCenter
+            .Borders.LineStyle = xlContinuous
+        End With
+        For j = mLB To mUB
+            ws.Cells(topRow + 1, secStart + (j - mLB)).Value = metrics(j)
+            With ws.Cells(topRow + 1, secStart + (j - mLB))
+                .HorizontalAlignment = xlCenter
+                .VerticalAlignment = xlCenter
+            End With
+        Next j
+        start = secEnd + 1
+    Next i
+
+    ws.Columns(2).ColumnWidth = 28
+    ws.Columns(3).ColumnWidth = 9
+    ws.Columns(4).ColumnWidth = 18
+    ws.Columns(5).Hidden = True
+End Sub
+
+Private Sub WriteSTRFormulas(ws As Worksheet, r As Long, isAgg As Boolean, codeOrName As String, startCol As Long)
+    Dim secCodes As Variant
+    secCodes = Array( _
+        Array("Occ", "Occ Index", "MPI % Chg", "ADR", "ADR Index", "ARI % Chg", "RevPAR", "RevPAR Index", "RGI % Chg"), _
+        Array("Occ Index", "MPI % Chg", "ADR Index", "ARI % Chg", "RevPAR Index", "RGI % Chg"), _
+        Array("Occ Index", "MPI % Chg", "ADR Index", "ARI % Chg", "RevPAR Index", "RGI % Chg"))
+
+    Dim secAgg As Variant
+    secAgg = Array("month", "yearToDate", "running12Month")
+
+    Dim dateExpr As String
+    dateExpr = "EOMONTH(DATE(Snap_YearNum,Snap_MonthNum,1),0)"
+
+    Dim s&, j&, col&
+    col = startCol
+    For s = LBound(secCodes) To UBound(secCodes)
+        Dim arr As Variant: arr = secCodes(s)
+        For j = LBound(arr) To UBound(arr)
+            Dim metric As String: metric = arr(j)
+            Dim fml As String
+            If isAgg Then
+                fml = "=SP.STR_AGG(" & codeOrName & "," & dateExpr & ",""" & secAgg(s) & """,""" & metric & """,""Subject"",""Total"")"
+            Else
+                fml = "=SP.STR(" & codeOrName & "," & dateExpr & ",""" & secAgg(s) & """,""" & metric & """,""Subject"",""Total"")"
+            End If
+            ws.Cells(r, col).Formula = fml
+            If StrMetricIsCurrency(metric) Then
+                ws.Cells(r, col).NumberFormat = NF_CURR
+            ElseIf StrMetricIsPercent(metric) Then
+                ws.Cells(r, col).NumberFormat = NF_PCT
+            Else
+                ws.Cells(r, col).NumberFormat = NF_DEC
+            End If
+            col = col + 1
+        Next j
+    Next s
 End Sub
 Private Function ShortManagerName(ByVal s As String) As String
     s = Trim$(CStr(s))
@@ -340,9 +456,9 @@ Public Sub BuildSnapshot()
     
      
     
-    ' Build Fund -> Hotels mapping
+    ' Build Fund -> Hotels mapping and Manager -> Hotels mapping
     Dim fundDict As Object: Set fundDict = CreateObject("Scripting.Dictionary")
-    Dim hotelRows As Collection: Set hotelRows = New Collection
+    Dim mgrDict As Object: Set mgrDict = CreateObject("Scripting.Dictionary")
     
     Dim r&, lastR&: lastR = propsRng.Rows.Count
     For r = 2 To lastR ' skip headers
@@ -356,22 +472,29 @@ Public Sub BuildSnapshot()
         
         If Len(hotel) > 0 And Len(code) > 0 Then
             If Not fundDict.exists(fund) Then fundDict.Add fund, New Collection
+            If Not mgrDict.exists(mgmt) Then mgrDict.Add mgmt, New Collection
             Dim rec As Variant
             rec = Array(hotel, code, mgmt, roomsVal)
             fundDict(fund).Add rec
+            mgrDict(mgmt).Add rec
         End If
     Next
     
     ' Sort hotels by name within each fund & sort funds alpha with FUND_EXCLUDE last
    Dim funds As Variant
-funds = fundDict.keys                ' Variant array from Scripting.Dictionary
-If IsArray(funds) Then
-    SortVariantStringArray funds     ' new helper below
-    funds = MoveValueToEndVariant(funds, FUND_EXCLUDE)
-Else: funds = Array()
+   funds = fundDict.keys
+   If IsArray(funds) Then
+        SortVariantStringArray funds
+        funds = MoveValueToEndVariant(funds, FUND_EXCLUDE)
+   Else
+        funds = Array()
+   End If
 
-End If
-    PrepareHelperCodeLists fundDict, funds
+   Dim mgrs As Variant
+   mgrs = mgrDict.keys
+   If IsArray(mgrs) Then SortVariantStringArray mgrs Else mgrs = Array()
+
+    PrepareHelperCodeLists fundDict, funds, mgrDict, mgrs
 
   
 
@@ -383,6 +506,10 @@ End If
     rowPtr = BuildOneTable(wsSnap, fundDict, funds, rowPtr, "YTD")
     rowPtr = rowPtr + 2
     rowPtr = BuildOneTable(wsSnap, fundDict, funds, rowPtr, "FY")
+    rowPtr = rowPtr + 2
+    rowPtr = BuildStrFundTable(wsSnap, fundDict, funds, rowPtr)
+    rowPtr = rowPtr + 2
+    rowPtr = BuildStrManagerTable(wsSnap, mgrs, rowPtr)
     
 ' Format overall sheet (no .Select calls)
 With wsSnap
@@ -477,7 +604,7 @@ WriteMetricFormulas ws, rowPtr, mode, False, ws.Cells(rowPtr, 5).Address(False, 
 
       ' Fund subtotal (AGG over fund)
             Dim codesName$: codesName = "Codes_" & SanitizeName(fund)
-            ws.Cells(rowPtr, 2).Value = fund & " — Subtotal"
+            ws.Cells(rowPtr, 2).Value = fund & " â€” Subtotal"
             ws.Cells(rowPtr, 2).Font.Bold = True
             WriteMetricFormulas ws, rowPtr, mode, True, codesName, headerTopRow, startCol
 
@@ -554,6 +681,104 @@ ApplyBandSeparators ws, tableTop, rowPtr - 1, startCol, metrics
 
 
     BuildOneTable = rowPtr
+End Function
+
+Private Function BuildStrFundTable(ws As Worksheet, fundDict As Object, funds As Variant, startRow As Long) As Long
+    Dim rowPtr&: rowPtr = startRow
+    Dim startCol&: startCol = 6
+    Dim sec1Cols&: sec1Cols = 9
+    Dim sec2Cols&: sec2Cols = 6
+    Dim totalCols&: totalCols = sec1Cols + sec2Cols + sec2Cols
+    Dim lastCol&: lastCol = startCol + totalCols - 1
+
+    WriteStrHeader ws, rowPtr, startCol, lastCol
+    Dim dataFirstRow&: dataFirstRow = rowPtr + 2
+    rowPtr = dataFirstRow
+    Dim headerTop&: headerTop = dataFirstRow - 2
+
+    Dim shadeToggle As Boolean: shadeToggle = False
+    Dim f As Long, fund As String, coll As Collection
+    If IsArray(funds) Then
+        For f = LBound(funds) To UBound(funds)
+            fund = CStr(funds(f))
+            If Not fundDict.exists(fund) Then GoTo NextFund
+            Set coll = fundDict(fund)
+            Dim arr(), i&
+            ReDim arr(1 To coll.Count)
+            For i = 1 To coll.Count: arr(i) = coll(i): Next
+            QuickSortByIndex arr, 0
+            For i = LBound(arr) To UBound(arr)
+                Dim hotel$, code$, mgr$, roomsVal As Variant
+                hotel = arr(i)(0): code = arr(i)(1): mgr = arr(i)(2): roomsVal = arr(i)(3)
+                ws.Cells(rowPtr, 2).Value = hotel
+                ws.Cells(rowPtr, 3).Value = roomsVal
+                ws.Cells(rowPtr, 4).Value = ShortManagerName(mgr)
+                ws.Cells(rowPtr, 5).Value = code
+                WriteSTRFormulas ws, rowPtr, False, ws.Cells(rowPtr, 5).Address(False, False), startCol
+                If shadeToggle Then ws.Range(ws.Cells(rowPtr, 2), ws.Cells(rowPtr, lastCol)).Interior.Color = RGB(232, 232, 232)
+                shadeToggle = Not shadeToggle
+                rowPtr = rowPtr + 1
+            Next i
+
+            Dim codesName$: codesName = "Codes_" & SanitizeName(fund)
+            ws.Cells(rowPtr, 2).Value = fund & "  Subtotal"
+            ws.Cells(rowPtr, 2).Font.Bold = True
+            WriteSTRFormulas ws, rowPtr, True, codesName, startCol
+            With ws.Range(ws.Cells(rowPtr, 2), ws.Cells(rowPtr, lastCol))
+                .Font.Bold = True
+                .Borders(xlInsideVertical).LineStyle = xlNone
+                .Borders(xlInsideHorizontal).LineStyle = xlNone
+                With .Borders(xlEdgeTop):    .LineStyle = xlContinuous: .Weight = xlMedium: End With
+                With .Borders(xlEdgeBottom): .LineStyle = xlContinuous: .Weight = xlMedium: End With
+                With .Borders(xlEdgeLeft):   .LineStyle = xlContinuous: .Weight = xlMedium: End With
+                With .Borders(xlEdgeRight):  .LineStyle = xlContinuous: .Weight = xlMedium: End With
+            End With
+            rowPtr = rowPtr + 1
+NextFund:
+        Next f
+    End If
+
+    ws.Rows(rowPtr).RowHeight = 10
+    rowPtr = rowPtr + 1
+
+    ws.Cells(rowPtr, 2).Value = "Total Managed Portfolio (ex. " & FUND_EXCLUDE & ")"
+    ws.Cells(rowPtr, 2).Font.Bold = True
+    WriteSTRFormulas ws, rowPtr, True, "Codes_TotalManaged", startCol
+    rowPtr = rowPtr + 1
+
+    ws.Cells(rowPtr, 2).Value = "Total Portfolio"
+    ws.Cells(rowPtr, 2).Font.Bold = True
+    WriteSTRFormulas ws, rowPtr, True, "Codes_TotalPortfolio", startCol
+    rowPtr = rowPtr + 1
+
+    BuildStrFundTable = rowPtr
+End Function
+
+Private Function BuildStrManagerTable(ws As Worksheet, mgrs As Variant, startRow As Long) As Long
+    Dim rowPtr&: rowPtr = startRow
+    Dim startCol&: startCol = 6
+    Dim sec1Cols&: sec1Cols = 9
+    Dim sec2Cols&: sec2Cols = 6
+    Dim totalCols&: totalCols = sec1Cols + sec2Cols + sec2Cols
+    Dim lastCol&: lastCol = startCol + totalCols - 1
+
+    WriteStrHeader ws, rowPtr, startCol, lastCol
+    Dim dataFirstRow&: dataFirstRow = rowPtr + 2
+    rowPtr = dataFirstRow
+
+    Dim i As Long
+    If IsArray(mgrs) Then
+        For i = LBound(mgrs) To UBound(mgrs)
+            Dim mgr As String: mgr = CStr(mgrs(i))
+            Dim codesName$: codesName = "CodesMgr_" & SanitizeName(mgr)
+            ws.Cells(rowPtr, 2).Value = mgr
+            ws.Cells(rowPtr, 2).Font.Bold = True
+            WriteSTRFormulas ws, rowPtr, True, codesName, startCol
+            rowPtr = rowPtr + 1
+        Next i
+    End If
+
+    BuildStrManagerTable = rowPtr
 End Function
 
 
@@ -669,7 +894,7 @@ End Function
 
 ' ============== Helper code lists for SP.FINANCIALS_AGG ==============
 
-Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant)
+Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict As Object, mgrs As Variant)
     Dim wsH As Worksheet: Set wsH = Worksheets(SH_HELP)
     wsH.Cells.Clear
 
@@ -759,6 +984,40 @@ Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant)
         ThisWorkbook.Names.Add name:="Codes_TotalPortfolio", refersTo:=wsH.Range("A1:A1")
     End If
 
+    ' Manager code lists
+    Dim hasMgrs As Boolean
+    On Error Resume Next: hasMgrs = (IsArray(mgrs) And UBound(mgrs) >= LBound(mgrs)): On Error GoTo 0
+    If hasMgrs Then
+        Dim m As Long
+        For m = LBound(mgrs) To UBound(mgrs)
+            Dim mgr As String: mgr = CStr(mgrs(m))
+            If mgrDict.exists(mgr) Then
+                Dim collM As Collection: Set collM = mgrDict(mgr)
+                wsH.Cells(r, 1).Value = "Mgr: " & mgr
+                wsH.Cells(r, 1).Font.Bold = True
+                r = r + 1
+                Dim startR2 As Long: startR2 = r
+                Dim i2 As Long
+                For i2 = 1 To collM.Count
+                    Dim codeM As String
+                    codeM = Trim$(CStr(collM(i2)(1)))
+                    If Len(codeM) > 0 Then
+                        wsH.Cells(r, 1).Value = codeM
+                        r = r + 1
+                    End If
+                Next i2
+                Dim nmMgr As String: nmMgr = "CodesMgr_" & SanitizeName(mgr)
+                On Error Resume Next: ThisWorkbook.Names(nmMgr).Delete: On Error GoTo 0
+                If r > startR2 Then
+                    ThisWorkbook.Names.Add name:=nmMgr, refersTo:=wsH.Range(wsH.Cells(startR2, 1), wsH.Cells(r - 1, 1))
+                Else
+                    ThisWorkbook.Names.Add name:=nmMgr, refersTo:=wsH.Range("A1:A1")
+                End If
+                r = r + 1
+            End If
+        Next m
+    End If
+
     wsH.Visible = xlSheetHidden
 End Sub
 
@@ -815,6 +1074,8 @@ Private Sub EnsureUsaliMap()
     wsMap.Range("A1").Value = "DisplayMetric"
     wsMap.Range("B1").Value = "USALI"
     wsMap.Range("C1").Value = "Notes"
+    wsMap.Range("E1").Value = "STR_Display"
+    wsMap.Range("F1").Value = "STR_Code"
     
     ' --- Curated mapping (DisplayMetric -> exact USALI strings from your tenant) ---
     ' You can add/remove lines here later; the code below will keep only those that exist.
@@ -863,10 +1124,33 @@ Private Sub EnsureUsaliMap()
     Next i
     
     wsMap.Columns("A:C").AutoFit
-    
+    wsMap.Columns("E:F").AutoFit
+
+    ' STR mapping
+    Dim strPairs As Variant
+    strPairs = Array( _
+        Array("Occ", "Occ"), _
+        Array("ADR", "ADR"), _
+        Array("RevPAR", "RevPAR"), _
+        Array("MPI", "Occ Index"), _
+        Array("ARI", "ADR Index"), _
+        Array("RGI", "RevPAR Index"), _
+        Array("MPI Change", "MPI % Chg"), _
+        Array("ARI Change", "ARI % Chg"), _
+        Array("RGI Change", "RGI % Chg") _
+    )
+    Dim outRow2 As Long: outRow2 = 2
+    For i = LBound(strPairs) To UBound(strPairs)
+        wsMap.Cells(outRow2, 5).Value = strPairs(i)(0)
+        wsMap.Cells(outRow2, 6).Value = strPairs(i)(1)
+        outRow2 = outRow2 + 1
+    Next i
+
     ' (Re)bind the named ranges used by formulas
     AddOrReplaceName NAME_USALI_DISPLAY, wsMap.Range("A:A")
     AddOrReplaceName NAME_USALI_CODE, wsMap.Range("B:B")
+    AddOrReplaceName NAME_STR_DISPLAY, wsMap.Range("E:E")
+    AddOrReplaceName NAME_STR_CODE, wsMap.Range("F:F")
 End Sub
 
 
@@ -875,6 +1159,8 @@ Private Sub EnsureNamedRanges()
     ' Named ranges for USALI Map columns
     AddOrReplaceName NAME_USALI_DISPLAY, Worksheets(SH_MAP).Range("A:A")
     AddOrReplaceName NAME_USALI_CODE, Worksheets(SH_MAP).Range("B:B")
+    AddOrReplaceName NAME_STR_DISPLAY, Worksheets(SH_MAP).Range("E:E")
+    AddOrReplaceName NAME_STR_CODE, Worksheets(SH_MAP).Range("F:F")
 End Sub
 
 Private Sub AddMonthValidation(tgt As Range)
@@ -883,8 +1169,8 @@ Private Sub AddMonthValidation(tgt As Range)
         .Add Type:=xlValidateWholeNumber, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="1", Formula2:="12"
         .ErrorTitle = "Enter a month from 1 to 12"
         .InputTitle = "Month"
-        .ErrorMessage = "Please enter a whole number 1–12."
-        .InputMessage = "Type 1–12"
+        .ErrorMessage = "Please enter a whole number 1â€“12."
+        .InputMessage = "Type 1â€“12"
         .IgnoreBlank = True
         .InCellDropdown = True
     End With
@@ -1143,7 +1429,7 @@ Private Sub ApplyBandSeparators(ws As Worksheet, topRow As Long, bottomRow As Lo
         .Weight = xlMedium
     End With
 
-    ' Band boundaries: after band 1–4
+    ' Band boundaries: after band 1â€“4
     Dim b As Long, boundaryCol As Long
     For b = 1 To 4
         boundaryCol = startCol + b * metricsPerBand - 1
