@@ -6,12 +6,7 @@ Private Const FOOTER_TEXT As String = "Confidential - For internal use only"
 
 ' Main entry point called by button on Input sheet
 Public Sub BuildSnapshotReportPDF()
-    ' Ensure snapshot content is up to date
-    BuildSnapshot
-    ' allow all calculations to complete before exporting
-    Application.Calculate
-    DoEvents
-
+    ' Use the snapshot already visible without triggering a rebuild
     Dim ws As Worksheet
     Set ws = Worksheets(SH_SNAP)
 
@@ -41,10 +36,10 @@ Private Function ApplyReportPageSetup(ws As Worksheet) As String
         .Zoom = False
         .FitToPagesWide = 1
         .FitToPagesTall = False
-        .TopMargin = Application.InchesToPoints(0.5)
-        .BottomMargin = Application.InchesToPoints(0.5)
-        .LeftMargin = Application.InchesToPoints(0.5)
-        .RightMargin = Application.InchesToPoints(0.5)
+        .TopMargin = Application.InchesToPoints(0.25)
+        .BottomMargin = Application.InchesToPoints(0.25)
+        .LeftMargin = Application.InchesToPoints(0.25)
+        .RightMargin = Application.InchesToPoints(0.25)
         .CenterFooter = FOOTER_TEXT
         .PrintTitleRows = "$1:$3"
         ApplyReportPageSetup = InsertLogo(.Parent)
