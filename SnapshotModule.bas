@@ -223,9 +223,9 @@ Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, la
     Dim secLabels As Variant, secMetrics As Variant
     secLabels = Array("MTD STR Data", "YTD", "Running 12 Month")
     secMetrics = Array( _
-        Array("Occ", "MPI", "Change", "ADR", "ARI", "Change", "RevPAR", "RGI", "Change"), _
-        Array("MPI", "Change", "ARI", "Change", "RGI", "Change"), _
-        Array("MPI", "Change", "ARI", "Change", "RGI", "Change"))
+        Array("Occ", "Occ Index", "% Change", "ADR", "ADR Index", "% Change", "RevPAR", "RevPAR Index", "% Change"), _
+        Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
+        Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"))
 
     Dim i&, start&, j&
     start = startCol
@@ -262,9 +262,9 @@ End Sub
 Private Sub WriteSTRFormulas(ws As Worksheet, r As Long, isAgg As Boolean, codeOrName As String, startCol As Long)
     Dim secCodes As Variant
     secCodes = Array( _
-        Array("Occ", "Occ Index", "MPI % Chg", "ADR", "ADR Index", "ARI % Chg", "RevPAR", "RevPAR Index", "RGI % Chg"), _
-        Array("Occ Index", "MPI % Chg", "ADR Index", "ARI % Chg", "RevPAR Index", "RGI % Chg"), _
-        Array("Occ Index", "MPI % Chg", "ADR Index", "ARI % Chg", "RevPAR Index", "RGI % Chg"))
+        Array("Occ", "MPI", "MPI % Chg", "ADR", "ARI", "ARI % Chg", "RevPAR", "RGI", "RGI % Chg"), _
+        Array("MPI", "MPI % Chg", "ARI", "ARI % Chg", "RGI", "RGI % Chg"), _
+        Array("MPI", "MPI % Chg", "ARI", "ARI % Chg", "RGI", "RGI % Chg"))
 
     Dim secAgg As Variant
     secAgg = Array("month", "yearToDate", "running12Month")
@@ -1132,12 +1132,12 @@ Private Sub EnsureUsaliMap()
         Array("Occ", "Occ"), _
         Array("ADR", "ADR"), _
         Array("RevPAR", "RevPAR"), _
-        Array("MPI", "Occ Index"), _
-        Array("ARI", "ADR Index"), _
-        Array("RGI", "RevPAR Index"), _
-        Array("MPI Change", "MPI % Chg"), _
-        Array("ARI Change", "ARI % Chg"), _
-        Array("RGI Change", "RGI % Chg") _
+        Array("Occ Index", "MPI"), _
+        Array("ADR Index", "ARI"), _
+        Array("RevPAR Index", "RGI"), _
+        Array("% Change", "MPI % Chg"), _
+        Array("% Change", "ARI % Chg"), _
+        Array("% Change", "RGI % Chg") _
     )
     Dim outRow2 As Long: outRow2 = 2
     For i = LBound(strPairs) To UBound(strPairs)
