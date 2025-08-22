@@ -1,4 +1,3 @@
-Attribute VB_Name = "Module1"
 Option Explicit
 
 ' ===========================
@@ -1153,11 +1152,13 @@ Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict
                     End If
                 Next iMk
                 Dim nmMarket As String: nmMarket = "CodesMarket_" & SanitizeName(market)
-                On Error Resume Next: ThisWorkbook.Names(nmMarket).Delete: On Error GoTo 0
+                On Error Resume Next
+                ThisWorkbook.Names(nmMarket).Delete
+                On Error GoTo 0
                 If r > startMk Then
-                    ThisWorkbook.Names.Add name:=nmMarket, refersTo:=wsH.Range(wsH.Cells(startMk, 1), wsH.Cells(r - 1, 1))
+                    ThisWorkbook.Names.Add Name:=nmMarket, RefersTo:=wsH.Range(wsH.Cells(startMk, 1), wsH.Cells(r - 1, 1))
                 Else
-                    ThisWorkbook.Names.Add name:=nmMarket, refersTo:=wsH.Range("A1:A1")
+                    ThisWorkbook.Names.Add Name:=nmMarket, RefersTo:=wsH.Range("A1:A1")
                 End If
                 r = r + 1
             End If
