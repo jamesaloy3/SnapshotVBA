@@ -30,6 +30,11 @@ Private Const NF_DEC As String = "0.0"
 
 
 Private Const FUND_EXCLUDE As String = "Stonebridge Legacy"  ' put this Fund last + exclude from Managed portfolio total
+
+' Track STR fund table layout for later reference
+Private fundDataFirstRow As Long, fundDataLastRow As Long
+Private fundTableStartCol As Long, fundTableLastCol As Long
+Private fundSubtotalRows As Object
 Private Function MetricsList() As Variant
     MetricsList = Array("Occ", "ADR", "RevPAR", "Total Rev (000's)", "NOI (000's)", "NOI Margin")
 End Function
@@ -191,7 +196,7 @@ Private Sub WriteTwoRowHeader(ws As Worksheet, topRow As Long, mode As String, s
     ws.Columns(5).Hidden = True    ' Code (hidden)
 End Sub
 
-Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, lastCol As Long)
+Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, lastCol As Long, Optional secLabelsOverride As Variant, Optional secMetricsOverride As Variant)
     Const RED_HEX As String = "E03C31"
     Dim red&: red = ColorHex(RED_HEX)
 
@@ -220,11 +225,17 @@ Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, la
     End With
 
     Dim secLabels As Variant, secMetrics As Variant
-    secLabels = Array("MTD STR Data", "YTD", "Running 12 Month")
-    secMetrics = Array( _
-        Array("Occ", "Occ Index", "% Change", "ADR", "ADR Index", "% Change", "RevPAR", "RevPAR Index", "% Change"), _
-        Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
-        Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"))
+    If IsMissing(secLabelsOverride) Then
+        secLabels = Array("MTD STR Data", "YTD", "Running 3 Month", "Running 12 Month")
+        secMetrics = Array( _
+            Array("Occ", "Occ Index", "% Change", "ADR", "ADR Index", "% Change", "RevPAR", "RevPAR Index", "% Change"), _
+            Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
+            Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
+            Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"))
+    Else
+        secLabels = secLabelsOverride
+        secMetrics = secMetricsOverride
+    End If
 
     Dim i&, start&, j&
     start = startCol
@@ -258,15 +269,16 @@ Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, la
     ws.Columns(5).Hidden = True
 End Sub
 
-Private Sub WriteSTRFormulas(ws As Worksheet, r As Long, isAgg As Boolean, codeOrName As String, startCol As Long)
+Private Sub WriteSTRFormulas(ws As Worksheet, r As Long, codeRef As String, startCol As Long)
     Dim secCodes As Variant
     secCodes = Array( _
         Array("Occ", "MPI", "MPI % Chg", "ADR", "ARI", "ARI % Chg", "RevPAR", "RGI", "RGI % Chg"), _
         Array("MPI", "MPI % Chg", "ARI", "ARI % Chg", "RGI", "RGI % Chg"), _
+        Array("MPI", "MPI % Chg", "ARI", "ARI % Chg", "RGI", "RGI % Chg"), _
         Array("MPI", "MPI % Chg", "ARI", "ARI % Chg", "RGI", "RGI % Chg"))
 
     Dim secAgg As Variant
-    secAgg = Array("month", "yearToDate", "running12Month")
+    secAgg = Array("month", "yearToDate", "running3Month", "running12Month")
 
     Dim dateExpr As String
     dateExpr = "EOMONTH(DATE(Snap_YearNum,Snap_MonthNum,1),0)"
@@ -278,11 +290,7 @@ Private Sub WriteSTRFormulas(ws As Worksheet, r As Long, isAgg As Boolean, codeO
         For j = LBound(arr) To UBound(arr)
             Dim metric As String: metric = arr(j)
             Dim fml As String
-            If isAgg Then
-                fml = "=SP.STR_AGG(" & codeOrName & "," & dateExpr & ",""" & secAgg(s) & """,""" & metric & """,""Subject"",""Total"")"
-            Else
-                fml = "=SP.STR(" & codeOrName & "," & dateExpr & ",""" & secAgg(s) & """,""" & metric & """,""Subject"",""Total"")"
-            End If
+            fml = "=SP.STR(" & codeRef & "," & dateExpr & ",""" & secAgg(s) & """,""" & metric & """,""Subject"",""Total"")"
             ws.Cells(r, col).Formula = fml
             If StrMetricIsCurrency(metric) Then
                 ws.Cells(r, col).NumberFormat = NF_CURR
@@ -295,6 +303,106 @@ Private Sub WriteSTRFormulas(ws As Worksheet, r As Long, isAgg As Boolean, codeO
         Next j
     Next s
 End Sub
+
+Private Sub WriteStrAvgFromRange(ws As Worksheet, targetRow As Long, startCol As Long, firstRow As Long, lastRow As Long)
+    Dim secStart As Long
+    ' MTD section – blank actual stats
+    ws.Cells(targetRow, startCol).ClearContents
+    ws.Cells(targetRow, startCol + 3).ClearContents
+    ws.Cells(targetRow, startCol + 6).ClearContents
+
+    Dim offsets As Variant
+    offsets = Array(1, 4, 7)
+    Dim i As Long, col As Long
+    For i = LBound(offsets) To UBound(offsets)
+        col = startCol + offsets(i)
+        ws.Cells(targetRow, col).Formula = "=AVERAGE(" & ws.Range(ws.Cells(firstRow, col), ws.Cells(lastRow, col)).Address(False, False) & ")"
+        ws.Cells(targetRow, col).NumberFormat = NF_DEC
+        ws.Cells(targetRow, col + 1).Formula = "=AVERAGE(" & ws.Range(ws.Cells(firstRow, col + 1), ws.Cells(lastRow, col + 1)).Address(False, False) & ")"
+        ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT
+    Next i
+
+    ' Remaining sections: YTD, Running 3, Running 12
+    secStart = startCol + 9
+    Dim s As Long
+    For s = 1 To 3
+        For i = 0 To 2
+            col = secStart + i * 2
+            ws.Cells(targetRow, col).Formula = "=AVERAGE(" & ws.Range(ws.Cells(firstRow, col), ws.Cells(lastRow, col)).Address(False, False) & ")"
+            ws.Cells(targetRow, col).NumberFormat = NF_DEC
+            ws.Cells(targetRow, col + 1).Formula = "=AVERAGE(" & ws.Range(ws.Cells(firstRow, col + 1), ws.Cells(lastRow, col + 1)).Address(False, False) & ")"
+            ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT
+        Next i
+        secStart = secStart + 6
+    Next s
+End Sub
+
+Private Sub WriteStrAvgAcrossRows(ws As Worksheet, targetRow As Long, startCol As Long, rowsArr As Variant)
+    Dim i As Long, col As Long, secStart As Long
+    ws.Cells(targetRow, startCol).ClearContents
+    ws.Cells(targetRow, startCol + 3).ClearContents
+    ws.Cells(targetRow, startCol + 6).ClearContents
+
+    Dim offsets As Variant
+    offsets = Array(1, 4, 7)
+    For i = LBound(offsets) To UBound(offsets)
+        col = startCol + offsets(i)
+        ws.Cells(targetRow, col).Formula = BuildAvgList(ws, rowsArr, col)
+        ws.Cells(targetRow, col).NumberFormat = NF_DEC
+        ws.Cells(targetRow, col + 1).Formula = BuildAvgList(ws, rowsArr, col + 1)
+        ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT
+    Next i
+
+    secStart = startCol + 9
+    Dim s As Long
+    For s = 1 To 3
+        For i = 0 To 2
+            col = secStart + i * 2
+            ws.Cells(targetRow, col).Formula = BuildAvgList(ws, rowsArr, col)
+            ws.Cells(targetRow, col).NumberFormat = NF_DEC
+            ws.Cells(targetRow, col + 1).Formula = BuildAvgList(ws, rowsArr, col + 1)
+            ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT
+        Next i
+        secStart = secStart + 6
+    Next s
+End Sub
+
+Private Function BuildAvgList(ws As Worksheet, rowsArr As Variant, col As Long) As String
+    Dim i As Long, listStr As String
+    For i = LBound(rowsArr) To UBound(rowsArr)
+        listStr = listStr & "," & ws.Cells(rowsArr(i), col).Address(False, False)
+    Next i
+    If Len(listStr) > 0 Then listStr = Mid$(listStr, 2)
+    BuildAvgList = "=AVERAGE(" & listStr & ")"
+End Function
+
+Private Sub WriteStrManagerAverages(ws As Worksheet, r As Long, startCol As Long)
+    Dim mgrRange As String
+    mgrRange = ws.Range(ws.Cells(fundDataFirstRow, 4), ws.Cells(fundDataLastRow, 4)).Address(False, False)
+    Dim colOut As Long: colOut = startCol
+    Dim periods As Variant
+    periods = Array( _
+        Array(1, 2, 4, 5, 7, 8), _
+        Array(9, 10, 11, 12, 13, 14), _
+        Array(15, 16, 17, 18, 19, 20), _
+        Array(21, 22, 23, 24, 25, 26))
+    Dim p As Long, o As Long, fundCol As Long, addr As String
+    For p = 0 To UBound(periods)
+        Dim arrOff As Variant: arrOff = periods(p)
+        For o = 0 To UBound(arrOff)
+            fundCol = fundTableStartCol + arrOff(o)
+            addr = ws.Range(ws.Cells(fundDataFirstRow, fundCol), ws.Cells(fundDataLastRow, fundCol)).Address(False, False)
+            ws.Cells(r, colOut).Formula = "=AVERAGEIF(" & mgrRange & "," & ws.Cells(r, 2).Address(False, False) & "," & addr & ")"
+            If o Mod 2 = 0 Then
+                ws.Cells(r, colOut).NumberFormat = NF_DEC
+            Else
+                ws.Cells(r, colOut).NumberFormat = NF_PCT
+            End If
+            colOut = colOut + 1
+        Next o
+    Next p
+End Sub
+
 Private Function ShortManagerName(ByVal s As String) As String
     s = Trim$(CStr(s))
     If Len(s) = 0 Then ShortManagerName = "": Exit Function
@@ -699,13 +807,16 @@ Private Function BuildStrFundTable(ws As Worksheet, fundDict As Object, funds As
     Dim startCol&: startCol = 6
     Dim sec1Cols&: sec1Cols = 9
     Dim sec2Cols&: sec2Cols = 6
-    Dim totalCols&: totalCols = sec1Cols + sec2Cols + sec2Cols
+    Dim totalCols&: totalCols = sec1Cols + sec2Cols * 3
     Dim lastCol&: lastCol = startCol + totalCols - 1
 
     WriteStrHeader ws, rowPtr, startCol, lastCol
     Dim dataFirstRow&: dataFirstRow = rowPtr + 2
     rowPtr = dataFirstRow
-    Dim headerTop&: headerTop = dataFirstRow - 2
+    fundDataFirstRow = dataFirstRow
+    fundTableStartCol = startCol
+    fundTableLastCol = lastCol
+    Set fundSubtotalRows = CreateObject("Scripting.Dictionary")
 
     Dim shadeToggle As Boolean: shadeToggle = False
     Dim f As Long, fund As String, coll As Collection
@@ -714,7 +825,8 @@ Private Function BuildStrFundTable(ws As Worksheet, fundDict As Object, funds As
             fund = CStr(funds(f))
             If Not fundDict.exists(fund) Then GoTo NextFund
             Set coll = fundDict(fund)
-            Dim arr(), i&
+            Dim arr(), i&, fundStartRow&
+            fundStartRow = rowPtr
             ReDim arr(1 To coll.Count)
             For i = 1 To coll.Count: arr(i) = coll(i): Next
             QuickSortByIndex arr, 0
@@ -725,16 +837,16 @@ Private Function BuildStrFundTable(ws As Worksheet, fundDict As Object, funds As
                 ws.Cells(rowPtr, 3).Value = roomsVal
                 ws.Cells(rowPtr, 4).Value = ShortManagerName(mgr)
                 ws.Cells(rowPtr, 5).Value = code
-                WriteSTRFormulas ws, rowPtr, False, ws.Cells(rowPtr, 5).Address(False, False), startCol
+                WriteSTRFormulas ws, rowPtr, ws.Cells(rowPtr, 5).Address(False, False), startCol
                 If shadeToggle Then ws.Range(ws.Cells(rowPtr, 2), ws.Cells(rowPtr, lastCol)).Interior.Color = RGB(232, 232, 232)
                 shadeToggle = Not shadeToggle
                 rowPtr = rowPtr + 1
             Next i
 
-            Dim codesName$: codesName = "Codes_" & SanitizeName(fund)
             ws.Cells(rowPtr, 2).Value = fund & "  Subtotal"
             ws.Cells(rowPtr, 2).Font.Bold = True
-            WriteSTRFormulas ws, rowPtr, True, codesName, startCol
+            WriteStrAvgFromRange ws, rowPtr, startCol, fundStartRow, rowPtr - 1
+            fundSubtotalRows.Add fund, rowPtr
             With ws.Range(ws.Cells(rowPtr, 2), ws.Cells(rowPtr, lastCol))
                 .Font.Bold = True
                 .Borders(xlInsideVertical).LineStyle = xlNone
@@ -749,42 +861,66 @@ NextFund:
         Next f
     End If
 
+    fundDataLastRow = rowPtr - 1
+
     ws.Rows(rowPtr).RowHeight = 10
     rowPtr = rowPtr + 1
 
     ws.Cells(rowPtr, 2).Value = "Total Managed Portfolio (ex. " & FUND_EXCLUDE & ")"
     ws.Cells(rowPtr, 2).Font.Bold = True
-    WriteSTRFormulas ws, rowPtr, True, "Codes_TotalManaged", startCol
+    Dim managedRows() As Variant, k As Variant, idx As Long
+    ReDim managedRows(0 To fundSubtotalRows.Count - 1)
+    idx = 0
+    For Each k In fundSubtotalRows.keys
+        If k <> FUND_EXCLUDE Then
+            managedRows(idx) = fundSubtotalRows(k)
+            idx = idx + 1
+        End If
+    Next k
+    ReDim Preserve managedRows(0 To idx - 1)
+    WriteStrAvgAcrossRows ws, rowPtr, startCol, managedRows
     rowPtr = rowPtr + 1
 
     ws.Cells(rowPtr, 2).Value = "Total Portfolio"
     ws.Cells(rowPtr, 2).Font.Bold = True
-    WriteSTRFormulas ws, rowPtr, True, "Codes_TotalPortfolio", startCol
+    Dim allRows() As Variant
+    ReDim allRows(0 To fundSubtotalRows.Count - 1)
+    idx = 0
+    For Each k In fundSubtotalRows.keys
+        allRows(idx) = fundSubtotalRows(k)
+        idx = idx + 1
+    Next k
+    WriteStrAvgAcrossRows ws, rowPtr, startCol, allRows
     rowPtr = rowPtr + 1
 
+    fundTableLastCol = lastCol
     BuildStrFundTable = rowPtr
 End Function
 
 Private Function BuildStrManagerTable(ws As Worksheet, mgrs As Variant, startRow As Long) As Long
     Dim rowPtr&: rowPtr = startRow
     Dim startCol&: startCol = 6
-    Dim sec1Cols&: sec1Cols = 9
-    Dim sec2Cols&: sec2Cols = 6
-    Dim totalCols&: totalCols = sec1Cols + sec2Cols + sec2Cols
+    Dim secCols&: secCols = 6
+    Dim totalCols&: totalCols = secCols * 4
     Dim lastCol&: lastCol = startCol + totalCols - 1
 
-    WriteStrHeader ws, rowPtr, startCol, lastCol
+    Dim secLabels As Variant, secMetrics As Variant
+    secLabels = Array("MTD STR Data", "YTD", "Running 3 Month", "Running 12 Month")
+    secMetrics = Array( _
+        Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
+        Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
+        Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
+        Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"))
+    WriteStrHeader ws, rowPtr, startCol, lastCol, secLabels, secMetrics
     Dim dataFirstRow&: dataFirstRow = rowPtr + 2
     rowPtr = dataFirstRow
 
     Dim i As Long
     If IsArray(mgrs) Then
         For i = LBound(mgrs) To UBound(mgrs)
-            Dim mgr As String: mgr = CStr(mgrs(i))
-            Dim codesName$: codesName = "CodesMgr_" & SanitizeName(mgr)
-            ws.Cells(rowPtr, 2).Value = mgr
+            ws.Cells(rowPtr, 2).Value = CStr(mgrs(i))
             ws.Cells(rowPtr, 2).Font.Bold = True
-            WriteSTRFormulas ws, rowPtr, True, codesName, startCol
+            WriteStrManagerAverages ws, rowPtr, startCol
             rowPtr = rowPtr + 1
         Next i
     End If
@@ -852,7 +988,7 @@ Private Sub WriteSTRMarketFormulas(ws As Worksheet, r As Long, codeOrName As Str
         For m = LBound(metrics) To UBound(metrics)
             Dim metric As String: metric = metrics(m)
             Dim fml As String
-            fml = "=SP.STR_AGG(" & codeOrName & "," & dateExpr & ",""month"",""" & metric & """,""Market Scale"",""" & segments(s) & """)"
+            fml = "=SP.STR(INDEX(" & codeOrName & ",1)," & dateExpr & ",""month"",""" & metric & """,""Market Scale"",""" & segments(s) & """)"
             ws.Cells(r, col).Formula = fml
             If StrMetricIsCurrency(metric) Then
                 ws.Cells(r, col).NumberFormat = NF_CURR
