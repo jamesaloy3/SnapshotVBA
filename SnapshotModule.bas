@@ -169,25 +169,21 @@ Private Sub WriteTwoRowHeader(ws As Worksheet, topRow As Long, mode As String, s
     Next b
 
     ' Column widths
+    Dim metricsPerBand&: metricsPerBand = (mUB - mLB + 1)
     For b = LBound(bandLabels) To UBound(bandLabels)
-        c1 = startCol + (b - LBound(bandLabels)) * (mUB - mLB + 1)
+        c1 = startCol + (b - LBound(bandLabels)) * metricsPerBand
+        Dim isVar As Boolean
+        isVar = ((b - LBound(bandLabels)) = 2) Or ((b - LBound(bandLabels)) = 4)
         For j = mLB To mUB
-            Select Case UCase$(CStr(metrics(j)))
-                Case "OCC", "ADR", "REVPAR", "NOI MARGIN": ws.Columns(c1 + (j - mLB)).ColumnWidth = 10
-                Case "TOTAL REV (000'S)", "NOI (000'S)":   ws.Columns(c1 + (j - mLB)).ColumnWidth = 17
-                Case Else:                                  ws.Columns(c1 + (j - mLB)).ColumnWidth = 12
-            End Select
+            Dim colIdx&: colIdx = c1 + (j - mLB)
+            Dim metricName As String: metricName = UCase$(CStr(metrics(j)))
+            If (metricName = "TOTAL REV (000'S)" Or metricName = "NOI (000'S)") And Not isVar Then
+                ws.Columns(colIdx).ColumnWidth = 14
+            Else
+                ws.Columns(colIdx).ColumnWidth = 11.5
+            End If
         Next j
     Next b
-
-    ' Force both variance bands to width 10
-    Dim metricsPerBand&: metricsPerBand = (UBound(metrics) - LBound(metrics) + 1)
-    Dim varBudStart&, varLyStart&
-    varBudStart = startCol + 2 * metricsPerBand
-    varLyStart = startCol + 4 * metricsPerBand
-    Dim k As Long
-    For k = varBudStart To varBudStart + metricsPerBand - 1: ws.Columns(k).ColumnWidth = 10: Next k
-    For k = varLyStart To varLyStart + metricsPerBand - 1: ws.Columns(k).ColumnWidth = 10: Next k
 
     ' First three columns widths
     ws.Columns(2).ColumnWidth = 28 ' Hotel
@@ -1866,6 +1862,7 @@ Private Sub FormatSnapshotShell()
         .Font.Color = vbWhite
         .Font.Bold = True
         .RowHeight = 32
+        .BorderAround Weight:=xlThick
     End With
 
     ' Pull Month/Year from names on Input sheet
