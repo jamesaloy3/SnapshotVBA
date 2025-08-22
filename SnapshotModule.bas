@@ -888,7 +888,7 @@ NextFund:
     ReDim Preserve managedRows(0 To idx - 1)
     WriteStrAvgAcrossRows ws, rowPtr, startCol, managedRows
     With ws.Range(ws.Cells(rowPtr, 2), ws.Cells(rowPtr, lastCol))
-        .Font.Size = 13
+        .Font.Size = 12
         .Font.Bold = True
         .Borders(xlInsideVertical).LineStyle = xlNone
         .Borders(xlInsideHorizontal).LineStyle = xlNone
@@ -911,7 +911,7 @@ NextFund:
     Next k
     WriteStrAvgAcrossRows ws, rowPtr, startCol, allRows
     With ws.Range(ws.Cells(rowPtr, 2), ws.Cells(rowPtr, lastCol))
-        .Font.Size = 13
+        .Font.Size = 12
         .Font.Bold = True
         .Borders(xlInsideVertical).LineStyle = xlNone
         .Borders(xlInsideHorizontal).LineStyle = xlNone
@@ -922,6 +922,8 @@ NextFund:
     End With
     ws.Rows(rowPtr).RowHeight = 20
     rowPtr = rowPtr + 1
+
+    ws.Range(ws.Cells(dataFirstRow, 2), ws.Cells(rowPtr - 1, lastCol)).Font.Size = 12
 
     Dim tableTop&: tableTop = dataFirstRow - 2
     ApplyStrSeparators ws, tableTop, rowPtr - 1, startCol, Array(sec1Cols, sec2Cols, sec2Cols, sec2Cols), True
@@ -957,6 +959,8 @@ Private Function BuildStrManagerTable(ws As Worksheet, mgrs As Variant, startRow
             rowPtr = rowPtr + 1
         Next i
     End If
+
+    ws.Range(ws.Cells(dataFirstRow, 2), ws.Cells(rowPtr - 1, lastCol)).Font.Size = 12
 
     Dim tableTop&: tableTop = dataFirstRow - 2
     ApplyStrSeparators ws, tableTop, rowPtr - 1, startCol, Array(secCols, secCols, secCols, secCols)
@@ -1043,7 +1047,8 @@ Private Function BuildStrMarketTable(ws As Worksheet, markets As Variant, startR
     Dim startCol&: startCol = 6
     Dim segments As Variant: segments = Array("Total", "Transient", "Group", "Contract")
     Dim metrics As Variant: metrics = Array("Occ", "ADR", "RevPAR", "Occ % Chg", "ADR % Chg", "RevPAR % Chg")
-    Dim lastCol&: lastCol = startCol + (UBound(segments) - LBound(segments) + 1) * (UBound(metrics) - LBound(metrics) + 1) - 1
+    Dim secCols&: secCols = UBound(metrics) - LBound(metrics) + 1
+    Dim lastCol&: lastCol = startCol + (UBound(segments) - LBound(segments) + 1) * secCols - 1
 
     WriteStrMarketHeader ws, rowPtr, startCol, segments, metrics
     Dim dataFirstRow&: dataFirstRow = rowPtr + 2
@@ -1060,6 +1065,11 @@ Private Function BuildStrMarketTable(ws As Worksheet, markets As Variant, startR
             rowPtr = rowPtr + 1
         Next i
     End If
+
+    ws.Range(ws.Cells(dataFirstRow, 2), ws.Cells(rowPtr - 1, lastCol)).Font.Size = 12
+
+    Dim tableTop&: tableTop = dataFirstRow - 2
+    ApplyStrSeparators ws, tableTop, rowPtr - 1, startCol, Array(secCols, secCols, secCols, secCols)
 
     BuildStrMarketTable = rowPtr
 End Function
