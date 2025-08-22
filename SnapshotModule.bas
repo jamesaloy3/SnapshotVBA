@@ -1370,13 +1370,23 @@ End Sub
 
 
 Private Function SanitizeName(s As String) As String
-    Dim t$: t = s
-    t = Replace(t, " ", "_")
-    t = Replace(t, "-", "_")
-    t = Replace(t, ".", "_")
-    t = Replace(t, "/", "_")
-    t = Replace(t, "\", "_")
+    Dim t As String
+    Dim i As Long, ch As String
+
+    ' Replace any character that Excel would reject in a Name with an underscore
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+        If ch Like "[A-Za-z0-9_]" Then
+            t = t & ch
+        Else
+            t = t & "_"
+        End If
+    Next i
+
+    ' Excel names cannot be empty or start with a number
     If Len(t) = 0 Then t = "NA"
+    If Not (Left$(t, 1) Like "[A-Za-z_]") Then t = "_" & t
+
     SanitizeName = t
 End Function
 
