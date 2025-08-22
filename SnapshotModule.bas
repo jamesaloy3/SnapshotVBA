@@ -887,6 +887,17 @@ NextFund:
     Next k
     ReDim Preserve managedRows(0 To idx - 1)
     WriteStrAvgAcrossRows ws, rowPtr, startCol, managedRows
+    With ws.Range(ws.Cells(rowPtr, 2), ws.Cells(rowPtr, lastCol))
+        .Font.Size = 13
+        .Font.Bold = True
+        .Borders(xlInsideVertical).LineStyle = xlNone
+        .Borders(xlInsideHorizontal).LineStyle = xlNone
+        With .Borders(xlEdgeTop):    .LineStyle = xlContinuous: .Weight = xlMedium: End With
+        With .Borders(xlEdgeBottom): .LineStyle = xlContinuous: .Weight = xlMedium: End With
+        With .Borders(xlEdgeLeft):   .LineStyle = xlContinuous: .Weight = xlMedium: End With
+        With .Borders(xlEdgeRight):  .LineStyle = xlContinuous: .Weight = xlMedium: End With
+    End With
+    ws.Rows(rowPtr).RowHeight = 20
     rowPtr = rowPtr + 1
 
     ws.Cells(rowPtr, 2).Value = "Total Portfolio"
@@ -899,7 +910,21 @@ NextFund:
         idx = idx + 1
     Next k
     WriteStrAvgAcrossRows ws, rowPtr, startCol, allRows
+    With ws.Range(ws.Cells(rowPtr, 2), ws.Cells(rowPtr, lastCol))
+        .Font.Size = 13
+        .Font.Bold = True
+        .Borders(xlInsideVertical).LineStyle = xlNone
+        .Borders(xlInsideHorizontal).LineStyle = xlNone
+        With .Borders(xlEdgeTop):    .LineStyle = xlContinuous: .Weight = xlMedium: End With
+        With .Borders(xlEdgeBottom): .LineStyle = xlContinuous: .Weight = xlMedium: End With
+        With .Borders(xlEdgeLeft):   .LineStyle = xlContinuous: .Weight = xlMedium: End With
+        With .Borders(xlEdgeRight):  .LineStyle = xlContinuous: .Weight = xlMedium: End With
+    End With
+    ws.Rows(rowPtr).RowHeight = 20
     rowPtr = rowPtr + 1
+
+    Dim tableTop&: tableTop = dataFirstRow - 2
+    ApplyStrSeparators ws, tableTop, rowPtr - 1, startCol, Array(sec1Cols, sec2Cols, sec2Cols, sec2Cols), True
 
     fundTableLastCol = lastCol
     BuildStrFundTable = rowPtr
@@ -932,6 +957,9 @@ Private Function BuildStrManagerTable(ws As Worksheet, mgrs As Variant, startRow
             rowPtr = rowPtr + 1
         Next i
     End If
+
+    Dim tableTop&: tableTop = dataFirstRow - 2
+    ApplyStrSeparators ws, tableTop, rowPtr - 1, startCol, Array(secCols, secCols, secCols, secCols)
 
     BuildStrManagerTable = rowPtr
 End Function
@@ -1741,6 +1769,38 @@ Private Sub ApplyBandSeparators(ws As Worksheet, topRow As Long, bottomRow As Lo
 
     ' Thick outline around full table
     ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, startCol + 5 * metricsPerBand - 1)).BorderAround Weight:=xlThick
+End Sub
+
+Private Sub ApplyStrSeparators(ws As Worksheet, topRow As Long, bottomRow As Long, startCol As Long, secWidths As Variant, Optional includeRoomsMgrDivider As Boolean = False)
+    Dim lastCol&, i&
+    lastCol = startCol - 1
+    For i = LBound(secWidths) To UBound(secWidths)
+        lastCol = lastCol + CLng(secWidths(i))
+    Next i
+
+    If includeRoomsMgrDivider Then
+        With ws.Range(ws.Cells(topRow, 3), ws.Cells(bottomRow, 3)).Borders(xlEdgeRight)
+            .LineStyle = xlContinuous
+            .Weight = xlMedium
+        End With
+    End If
+
+    With ws.Range(ws.Cells(topRow, startCol), ws.Cells(bottomRow, startCol)).Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .Weight = xlMedium
+    End With
+
+    Dim boundaryCol&: boundaryCol = startCol
+    For i = LBound(secWidths) To UBound(secWidths) - 1
+        boundaryCol = boundaryCol + secWidths(i) - 1
+        With ws.Range(ws.Cells(topRow, boundaryCol), ws.Cells(bottomRow, boundaryCol)).Borders(xlEdgeRight)
+            .LineStyle = xlContinuous
+            .Weight = xlMedium
+        End With
+        boundaryCol = boundaryCol + 1
+    Next i
+
+    ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, lastCol)).BorderAround Weight:=xlThick
 End Sub
 
 Public Sub BuildFormatRun()
