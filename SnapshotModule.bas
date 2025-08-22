@@ -636,7 +636,6 @@ Public Sub BuildSnapshot()
     
 ' Format overall sheet (no .Select calls)
 With wsSnap
-    .Columns("A:AZ").EntireColumn.AutoFit
     .Columns(5).Hidden = True   ' Code column (E) hidden
 End With
 
@@ -1447,9 +1446,6 @@ Private Sub EnsureUsaliMap()
         End If
         outRow = outRow + 1
     Next i
-    
-    wsMap.Columns("A:C").AutoFit
-    wsMap.Columns("E:F").AutoFit
 
     ' STR mapping
     Dim strPairs As Variant
