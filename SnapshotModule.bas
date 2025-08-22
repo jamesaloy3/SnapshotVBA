@@ -196,7 +196,7 @@ Private Sub WriteTwoRowHeader(ws As Worksheet, topRow As Long, mode As String, s
     ws.Columns(5).Hidden = True    ' Code (hidden)
 End Sub
 
-Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, lastCol As Long, Optional secLabelsOverride As Variant, Optional secMetricsOverride As Variant)
+Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, lastCol As Long, Optional secLabelsOverride As Variant, Optional secMetricsOverride As Variant, Optional firstColLabel As String = "Hotel", Optional includeRoomsAndManagerCols As Boolean = True)
     Const RED_HEX As String = "E03C31"
     Dim red&: red = ColorHex(RED_HEX)
 
@@ -214,15 +214,23 @@ Private Sub WriteStrHeader(ws As Worksheet, topRow As Long, startCol As Long, la
     End With
 
     ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow + 1, 2)).Merge
-    ws.Range(ws.Cells(topRow, 3), ws.Cells(topRow + 1, 3)).Merge
-    ws.Range(ws.Cells(topRow, 4), ws.Cells(topRow + 1, 4)).Merge
-    ws.Cells(topRow, 2).Value = "Hotel"
-    ws.Cells(topRow, 3).Value = "Rooms"
-    ws.Cells(topRow, 4).Value = "Manager"
-    With ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow + 1, 4))
-        .HorizontalAlignment = xlLeft
-        .VerticalAlignment = xlCenter
-    End With
+    ws.Cells(topRow, 2).Value = firstColLabel
+    If includeRoomsAndManagerCols Then
+        ws.Range(ws.Cells(topRow, 3), ws.Cells(topRow + 1, 3)).Merge
+        ws.Range(ws.Cells(topRow, 4), ws.Cells(topRow + 1, 4)).Merge
+        ws.Cells(topRow, 3).Value = "Rooms"
+        ws.Cells(topRow, 4).Value = "Manager"
+        With ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow + 1, 4))
+            .HorizontalAlignment = xlLeft
+            .VerticalAlignment = xlCenter
+        End With
+    Else
+        ws.Range(ws.Cells(topRow, 3), ws.Cells(topRow + 1, 4)).ClearContents
+        With ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow + 1, 2))
+            .HorizontalAlignment = xlLeft
+            .VerticalAlignment = xlCenter
+        End With
+    End If
 
     Dim secLabels As Variant, secMetrics As Variant
     If IsMissing(secLabelsOverride) Then
@@ -911,14 +919,14 @@ Private Function BuildStrManagerTable(ws As Worksheet, mgrs As Variant, startRow
         Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
         Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"), _
         Array("Occ Index", "% Change", "ADR Index", "% Change", "RevPAR Index", "% Change"))
-    WriteStrHeader ws, rowPtr, startCol, lastCol, secLabels, secMetrics
+    WriteStrHeader ws, rowPtr, startCol, lastCol, secLabels, secMetrics, "Manager", False
     Dim dataFirstRow&: dataFirstRow = rowPtr + 2
     rowPtr = dataFirstRow
 
     Dim i As Long
     If IsArray(mgrs) Then
         For i = LBound(mgrs) To UBound(mgrs)
-            ws.Cells(rowPtr, 2).Value = CStr(mgrs(i))
+            ws.Cells(rowPtr, 2).Value = ShortManagerName(CStr(mgrs(i)))
             ws.Cells(rowPtr, 2).Font.Bold = True
             WriteStrManagerAverages ws, rowPtr, startCol
             rowPtr = rowPtr + 1
