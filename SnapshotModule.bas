@@ -1641,7 +1641,7 @@ End Sub
 Private Sub EnsureInputButtons(ws As Worksheet)
     Dim btn As Shape
 
-    ' Snapshot generation button
+    ' Report generation button
     On Error Resume Next
     Set btn = ws.Shapes("btnBuildSnapshot")
     On Error GoTo 0
@@ -1655,7 +1655,7 @@ Private Sub EnsureInputButtons(ws As Worksheet)
     End If
     With btn
         .OnAction = "BuildFormatRun"
-        .TextFrame.Characters.Text = "Generate Snapshot"
+        .TextFrame.Characters.Text = "Generate Report"
         .TextFrame.Characters.Font.Size = 11
         .Placement = xlMove
     End With
@@ -1674,7 +1674,7 @@ Private Sub EnsureInputButtons(ws As Worksheet)
     End If
     With btn
         .OnAction = "BuildSnapshotReportPDF"
-        .TextFrame.Characters.Text = "Export Snapshot PDF"
+        .TextFrame.Characters.Text = "Export to PDF"
         .TextFrame.Characters.Font.Size = 11
         .Placement = xlMove
     End With
