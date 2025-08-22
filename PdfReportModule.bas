@@ -76,7 +76,10 @@ Private Sub ApplyTablePageBreaks(ws As Worksheet)
         Select Case UCase$(Trim$(ws.Cells(r, 2).Value))
             Case "HOTEL", "MANAGER", "MARKET"
                 ' add a little space before each table header
-                If r > 1 Then ws.Rows(r - 1).RowHeight = ws.StandardHeight * 1.5
+                If r > 1 Then
+                    ws.Rows(r - 1).RowHeight = ws.StandardHeight
+                    ws.Rows(r - 1).Borders.LineStyle = xlLineStyleNone
+                End If
                 ' allow multiple tables on a page; only break when ~40 rows used
                 If r - lastBreak > 40 Then
                     ws.HPageBreaks.Add Before:=ws.Rows(r)
