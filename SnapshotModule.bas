@@ -629,9 +629,9 @@ Public Sub BuildSnapshot()
     rowPtr = BuildOneTable(wsSnap, fundDict, funds, rowPtr, "FY")
     rowPtr = rowPtr + 2
     rowPtr = BuildStrFundTable(wsSnap, fundDict, funds, rowPtr)
-    rowPtr = rowPtr + 2
+    rowPtr = rowPtr + 1
     rowPtr = BuildStrManagerTable(wsSnap, mgrs, rowPtr)
-    rowPtr = rowPtr + 2
+    rowPtr = rowPtr + 1
     rowPtr = BuildStrMarketTable(wsSnap, markets, rowPtr)
     
 ' Format overall sheet (no .Select calls)
@@ -1862,7 +1862,19 @@ Private Sub FormatSnapshotShell()
         .Font.Color = vbWhite
         .Font.Bold = True
         .RowHeight = 32
-        .BorderAround Weight:=xlThick
+        With .Borders(xlEdgeTop)
+            .LineStyle = xlContinuous
+            .Weight = xlThick
+        End With
+        With .Borders(xlEdgeLeft)
+            .LineStyle = xlContinuous
+            .Weight = xlThick
+        End With
+        With .Borders(xlEdgeRight)
+            .LineStyle = xlContinuous
+            .Weight = xlThick
+        End With
+        .Borders(xlEdgeBottom).LineStyle = xlLineStyleNone
     End With
 
     ' Pull Month/Year from names on Input sheet
