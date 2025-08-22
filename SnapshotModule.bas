@@ -1647,8 +1647,8 @@ Private Sub EnsureInputSheet()
         ' Sheet already exists: do NOT recreate or clear.
         Set ws = Worksheets(SH_INPUT)
 
-        ' Ensure the single build button exists and is wired up
-       
+        ' Ensure the snapshot build button exists and is wired up
+
         On Error Resume Next
         Set btn = ws.Shapes("btnBuildSnapshot")
         On Error GoTo 0
@@ -1660,13 +1660,34 @@ Private Sub EnsureInputSheet()
                         Left:=ws.Range("D1").Left, _
                         Top:=ws.Range("D1").Top, _
                         Width:=140, Height:=28)
-            btn.name = "btnBuildSnapshot"
+            btn.Name = "btnBuildSnapshot"
         End If
 
         ' Wire caption + macro every time (idempotent)
         With btn
             .OnAction = "BuildFormatRun"
             .TextFrame.Characters.Text = "Build Snapshot"
+            .TextFrame.Characters.Font.Size = 11
+            .Placement = xlMove
+        End With
+
+        ' Ensure the PDF export button exists and is wired up
+        On Error Resume Next
+        Set btn = ws.Shapes("btnExportSnapshotPDF")
+        On Error GoTo 0
+
+        If btn Is Nothing Then
+            Set btn = ws.Shapes.AddFormControl( _
+                        Type:=xlButtonControl, _
+                        Left:=ws.Range("D2").Left, _
+                        Top:=ws.Range("D2").Top, _
+                        Width:=140, Height:=28)
+            btn.Name = "btnExportSnapshotPDF"
+        End If
+
+        With btn
+            .OnAction = "BuildSnapshotReportPDF"
+            .TextFrame.Characters.Text = "Export Snapshot PDF"
             .TextFrame.Characters.Font.Size = 11
             .Placement = xlMove
         End With
@@ -1701,16 +1722,30 @@ Private Sub EnsureInputSheet()
         .Range("A1:A2").Font.Bold = True
 
         ' Create the build button ONCE as a Shape Form Control
-        
+
         Set btn = .Shapes.AddFormControl( _
                     Type:=xlButtonControl, _
                     Left:=.Range("D1").Left, _
                     Top:=.Range("D1").Top, _
                     Width:=140, Height:=28)
         With btn
-            .name = "btnBuildSnapshot"
+            .Name = "btnBuildSnapshot"
             .OnAction = "BuildFormatRun"
             .TextFrame.Characters.Text = "Build Snapshot"
+            .TextFrame.Characters.Font.Size = 11
+            .Placement = xlMove
+        End With
+
+        ' Second button to export PDF report
+        Set btn = .Shapes.AddFormControl( _
+                    Type:=xlButtonControl, _
+                    Left:=.Range("D2").Left, _
+                    Top:=.Range("D2").Top, _
+                    Width:=140, Height:=28)
+        With btn
+            .Name = "btnExportSnapshotPDF"
+            .OnAction = "BuildSnapshotReportPDF"
+            .TextFrame.Characters.Text = "Export Snapshot PDF"
             .TextFrame.Characters.Font.Size = 11
             .Placement = xlMove
         End With
