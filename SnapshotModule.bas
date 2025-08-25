@@ -25,6 +25,7 @@ Private Const NAME_YEARNUM As String = "YearNum"
 Private Const NF_CURR As String = "_($* #,##0_);_($* (#,##0);_($* ""-""_);_(@_)"
 Private Const NF_CURR_K As String = "_($* #,##0,_) ;_($* (#,##0,)_);_($* ""-""_) ;_(@_)"
 Private Const NF_PCT As String = "0.0%"
+Private Const NF_PCT_WHOLE As String = "0.0""%"""
 Private Const NF_PCT_SIGN As String = "+0.0%;-0.0%;0.0%"
 Private Const NF_DEC As String = "0.0"
 
@@ -299,7 +300,12 @@ Private Sub WriteSTRFormulas(ws As Worksheet, r As Long, codeRef As String, star
             If StrMetricIsCurrency(metric) Then
                 ws.Cells(r, col).NumberFormat = NF_CURR
             ElseIf StrMetricIsPercent(metric) Then
-                ws.Cells(r, col).NumberFormat = NF_PCT
+                If InStr(1, metric, "% Chg", vbTextCompare) > 0 Or _
+                   InStr(1, metric, "% Change", vbTextCompare) > 0 Then
+                    ws.Cells(r, col).NumberFormat = NF_PCT_WHOLE
+                Else
+                    ws.Cells(r, col).NumberFormat = NF_PCT
+                End If
             Else
                 ws.Cells(r, col).NumberFormat = NF_DEC
             End If
@@ -323,7 +329,7 @@ Private Sub WriteStrAvgFromRange(ws As Worksheet, targetRow As Long, startCol As
         ws.Cells(targetRow, col).Formula = "=AVERAGE(" & ws.Range(ws.Cells(firstRow, col), ws.Cells(lastRow, col)).Address(False, False) & ")"
         ws.Cells(targetRow, col).NumberFormat = NF_DEC
         ws.Cells(targetRow, col + 1).Formula = "=AVERAGE(" & ws.Range(ws.Cells(firstRow, col + 1), ws.Cells(lastRow, col + 1)).Address(False, False) & ")"
-        ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT
+        ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT_WHOLE
     Next i
 
     ' Remaining sections: YTD, Running 3, Running 12
@@ -335,7 +341,7 @@ Private Sub WriteStrAvgFromRange(ws As Worksheet, targetRow As Long, startCol As
             ws.Cells(targetRow, col).Formula = "=AVERAGE(" & ws.Range(ws.Cells(firstRow, col), ws.Cells(lastRow, col)).Address(False, False) & ")"
             ws.Cells(targetRow, col).NumberFormat = NF_DEC
             ws.Cells(targetRow, col + 1).Formula = "=AVERAGE(" & ws.Range(ws.Cells(firstRow, col + 1), ws.Cells(lastRow, col + 1)).Address(False, False) & ")"
-            ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT
+            ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT_WHOLE
         Next i
         secStart = secStart + 6
     Next s
@@ -354,7 +360,7 @@ Private Sub WriteStrAvgAcrossRows(ws As Worksheet, targetRow As Long, startCol A
         ws.Cells(targetRow, col).Formula = BuildAvgList(ws, rowsArr, col)
         ws.Cells(targetRow, col).NumberFormat = NF_DEC
         ws.Cells(targetRow, col + 1).Formula = BuildAvgList(ws, rowsArr, col + 1)
-        ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT
+        ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT_WHOLE
     Next i
 
     secStart = startCol + 9
@@ -365,7 +371,7 @@ Private Sub WriteStrAvgAcrossRows(ws As Worksheet, targetRow As Long, startCol A
             ws.Cells(targetRow, col).Formula = BuildAvgList(ws, rowsArr, col)
             ws.Cells(targetRow, col).NumberFormat = NF_DEC
             ws.Cells(targetRow, col + 1).Formula = BuildAvgList(ws, rowsArr, col + 1)
-            ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT
+            ws.Cells(targetRow, col + 1).NumberFormat = NF_PCT_WHOLE
         Next i
         secStart = secStart + 6
     Next s
@@ -400,7 +406,7 @@ Private Sub WriteStrManagerAverages(ws As Worksheet, r As Long, startCol As Long
             If o Mod 2 = 0 Then
                 ws.Cells(r, colOut).NumberFormat = NF_DEC
             Else
-                ws.Cells(r, colOut).NumberFormat = NF_PCT
+                ws.Cells(r, colOut).NumberFormat = NF_PCT_WHOLE
             End If
             colOut = colOut + 1
         Next o
@@ -959,6 +965,7 @@ Private Function BuildStrManagerTable(ws As Worksheet, mgrs As Variant, startRow
 
     Dim tableTop&: tableTop = dataFirstRow - 2
     ApplyStrSeparators ws, tableTop, rowPtr - 1, startCol, Array(secCols, secCols, secCols, secCols)
+    ApplyStrDotDividers ws, tableTop, rowPtr - 1, startCol, 4, secCols
 
     BuildStrManagerTable = rowPtr
 End Function
@@ -1028,7 +1035,12 @@ Private Sub WriteSTRMarketFormulas(ws As Worksheet, r As Long, codeOrName As Str
             If StrMetricIsCurrency(metric) Then
                 ws.Cells(r, col).NumberFormat = NF_CURR
             ElseIf StrMetricIsPercent(metric) Then
-                ws.Cells(r, col).NumberFormat = NF_PCT
+                If InStr(1, metric, "% Chg", vbTextCompare) > 0 Or _
+                   InStr(1, metric, "% Change", vbTextCompare) > 0 Then
+                    ws.Cells(r, col).NumberFormat = NF_PCT_WHOLE
+                Else
+                    ws.Cells(r, col).NumberFormat = NF_PCT
+                End If
             Else
                 ws.Cells(r, col).NumberFormat = NF_DEC
             End If
@@ -1041,7 +1053,7 @@ Private Function BuildStrMarketTable(ws As Worksheet, markets As Variant, startR
     Dim rowPtr&: rowPtr = startRow
     Dim startCol&: startCol = 6
     Dim segments As Variant: segments = Array("Total", "Transient", "Group", "Contract")
-    Dim metrics As Variant: metrics = Array("Occ", "ADR", "RevPAR", "Occ % Chg", "ADR % Chg", "RevPAR % Chg")
+    Dim metrics As Variant: metrics = Array("Occ", "Occ % Chg", "ADR", "ADR % Chg", "RevPAR", "RevPAR % Chg")
     Dim secCols&: secCols = UBound(metrics) - LBound(metrics) + 1
     Dim lastCol&: lastCol = startCol + (UBound(segments) - LBound(segments) + 1) * secCols - 1
 
@@ -1065,6 +1077,8 @@ Private Function BuildStrMarketTable(ws As Worksheet, markets As Variant, startR
 
     Dim tableTop&: tableTop = dataFirstRow - 2
     ApplyStrSeparators ws, tableTop, rowPtr - 1, startCol, Array(secCols, secCols, secCols, secCols)
+    ApplyStrDotDividers ws, tableTop, rowPtr - 1, startCol, _
+        UBound(segments) - LBound(segments) + 1, secCols
 
     BuildStrMarketTable = rowPtr
 End Function
@@ -1807,6 +1821,21 @@ Private Sub ApplyStrSeparators(ws As Worksheet, topRow As Long, bottomRow As Lon
     Next i
 
     ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, lastCol)).BorderAround Weight:=xlThick
+End Sub
+
+Private Sub ApplyStrDotDividers(ws As Worksheet, topRow As Long, bottomRow As Long, startCol As Long, sectionCount As Long, secWidth As Long)
+    Dim s As Long, baseCol As Long
+    For s = 0 To sectionCount - 1
+        baseCol = startCol + s * secWidth
+        With ws.Range(ws.Cells(topRow, baseCol + 1), ws.Cells(bottomRow, baseCol + 1)).Borders(xlEdgeRight)
+            .LineStyle = xlDot
+            .Weight = xlThin
+        End With
+        With ws.Range(ws.Cells(topRow, baseCol + 3), ws.Cells(bottomRow, baseCol + 3)).Borders(xlEdgeRight)
+            .LineStyle = xlDot
+            .Weight = xlThin
+        End With
+    Next s
 End Sub
 
 Public Sub BuildFormatRun()
