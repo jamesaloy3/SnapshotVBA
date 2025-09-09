@@ -1744,7 +1744,10 @@ Private Sub FormatSnapshotShell()
             .LineStyle = xlContinuous
             .Weight = xlThick
         End With
-        .Borders(xlEdgeBottom).LineStyle = xlLineStyleNone
+        With .Borders(xlEdgeBottom)
+            .LineStyle = xlContinuous
+            .Weight = xlThick
+        End With
     End With
 
     ' Pull Month/Year from names on Input sheet
