@@ -65,13 +65,13 @@ NoLogo:
     InsertLogo = ""
 End Function
 
-  ' Insert manual breaks only as needed and provide spacing between sections
+' Insert a manual break after the second table and provide spacing between sections
 Private Sub ApplyTablePageBreaks(ws As Worksheet)
     ws.ResetAllPageBreaks
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
-    Dim r As Long, lastBreak As Long
-    lastBreak = 4
+    Dim r As Long, headerCount As Long
+    headerCount = 0
     For r = 4 To lastRow
         Select Case UCase$(Trim$(ws.Cells(r, 2).Value))
             Case "HOTEL", "MANAGER", "MARKET"
@@ -80,10 +80,10 @@ Private Sub ApplyTablePageBreaks(ws As Worksheet)
                     ws.Rows(r - 1).RowHeight = ws.StandardHeight
                     ws.Rows(r - 1).Borders.LineStyle = xlLineStyleNone
                 End If
-                ' allow multiple tables on a page; only break when ~40 rows used
-                If r - lastBreak > 40 Then
+                headerCount = headerCount + 1
+                ' first two tables on page 1, break before third table
+                If headerCount = 3 Then
                     ws.HPageBreaks.Add Before:=ws.Rows(r)
-                    lastBreak = r
                 End If
         End Select
     Next r
