@@ -1628,8 +1628,11 @@ Private Sub ApplyBandSeparators(ws As Worksheet, topRow As Long, bottomRow As Lo
         End With
     Next b
 
-    ' Thick outline around full table
-    ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, startCol + 5 * metricsPerBand - 1)).BorderAround Weight:=xlThick
+    ' Thick outline around full table (sides & bottom only)
+    With ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, startCol + 5 * metricsPerBand - 1))
+        .BorderAround Weight:=xlThick
+        .Borders(xlEdgeTop).LineStyle = xlLineStyleNone
+    End With
 End Sub
 
 Private Sub ApplyStrSeparators(ws As Worksheet, topRow As Long, bottomRow As Long, startCol As Long, secWidths As Variant, Optional includeRoomsMgrDivider As Boolean = False)
@@ -1661,7 +1664,10 @@ Private Sub ApplyStrSeparators(ws As Worksheet, topRow As Long, bottomRow As Lon
         boundaryCol = boundaryCol + 1
     Next i
 
-    ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, lastCol)).BorderAround Weight:=xlThick
+    With ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, lastCol))
+        .BorderAround Weight:=xlThick
+        .Borders(xlEdgeTop).LineStyle = xlLineStyleNone
+    End With
 End Sub
 
 Private Sub ApplyStrDotDividers(ws As Worksheet, topRow As Long, bottomRow As Long, startCol As Long, sectionCount As Long, secWidth As Long)
