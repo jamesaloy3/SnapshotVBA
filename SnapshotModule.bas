@@ -1628,10 +1628,9 @@ Private Sub ApplyBandSeparators(ws As Worksheet, topRow As Long, bottomRow As Lo
         End With
     Next b
 
-    ' Thick outline around full table (sides & bottom only)
+    ' Thick outline around full table
     With ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, startCol + 5 * metricsPerBand - 1))
         .BorderAround Weight:=xlThick
-        .Borders(xlEdgeTop).LineStyle = xlLineStyleNone
     End With
 End Sub
 
@@ -1666,7 +1665,6 @@ Private Sub ApplyStrSeparators(ws As Worksheet, topRow As Long, bottomRow As Lon
 
     With ws.Range(ws.Cells(topRow, 2), ws.Cells(bottomRow, lastCol))
         .BorderAround Weight:=xlThick
-        .Borders(xlEdgeTop).LineStyle = xlLineStyleNone
     End With
 End Sub
 
