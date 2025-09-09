@@ -561,45 +561,39 @@ Public Sub BuildSnapshot()
     If propsRng Is Nothing Then Err.Raise vbObjectError + 1, , "'My Properties' spill (A1#) not found."
     
     ' Identify key columns in My Properties spill
-    Dim cCode&, cHotel&, cMgmt&, cRooms&, cFund&, cMarket&
+    Dim cCode&, cHotel&, cMgmt&, cRooms&, cFund&
     cCode = FindHeaderCol(propsRng, "Code")
     cHotel = FindHeaderCol(propsRng, "HotelName")
     cMgmt = FindHeaderCol(propsRng, "ManagementCompany")
     cRooms = FindHeaderCol(propsRng, "Rooms")
     cFund = FindHeaderCol(propsRng, "Fund")
-    cMarket = FindHeaderCol(propsRng, "Market")
-    If cCode * cHotel * cMgmt * cRooms * cFund * cMarket = 0 Then
-        Err.Raise vbObjectError + 2, , "Missing required columns in 'My Properties' spill: Code, HotelName, ManagementCompany, Rooms, Fund, Market."
+    If cCode * cHotel * cMgmt * cRooms * cFund = 0 Then
+        Err.Raise vbObjectError + 2, , "Missing required columns in 'My Properties' spill: Code, HotelName, ManagementCompany, Rooms, Fund."
     End If
     
      
     
-    ' Build Fund -> Hotels mapping, Manager -> Hotels mapping, and Market -> Hotels mapping
+    ' Build Fund -> Hotels mapping and Manager -> Hotels mapping
     Dim fundDict As Object: Set fundDict = CreateObject("Scripting.Dictionary")
     Dim mgrDict As Object: Set mgrDict = CreateObject("Scripting.Dictionary")
-    Dim marketDict As Object: Set marketDict = CreateObject("Scripting.Dictionary")
     
     Dim r&, lastR&: lastR = propsRng.Rows.Count
     For r = 2 To lastR ' skip headers
-        Dim fund$, hotel$, code$, mgmt$, roomsVal As Variant, market$
+        Dim fund$, hotel$, code$, mgmt$, roomsVal As Variant
         fund = Nz(propsRng.Cells(r, cFund).Value)
         If Len(fund) = 0 Then fund = "(Unassigned)"
         hotel = Nz(propsRng.Cells(r, cHotel).Value)
         code = Nz(propsRng.Cells(r, cCode).Value)
         mgmt = Nz(propsRng.Cells(r, cMgmt).Value)
         roomsVal = propsRng.Cells(r, cRooms).Value
-        market = Nz(propsRng.Cells(r, cMarket).Value)
-        If Len(market) = 0 Then market = "(Unassigned)"
 
         If Len(hotel) > 0 And Len(code) > 0 Then
             If Not fundDict.exists(fund) Then fundDict.Add fund, New Collection
             If Not mgrDict.exists(mgmt) Then mgrDict.Add mgmt, New Collection
-            If Not marketDict.exists(market) Then marketDict.Add market, New Collection
             Dim rec As Variant
             rec = Array(hotel, code, mgmt, roomsVal)
             fundDict(fund).Add rec
             mgrDict(mgmt).Add rec
-            marketDict(market).Add rec
         End If
     Next
     
@@ -617,11 +611,7 @@ Public Sub BuildSnapshot()
    mgrs = mgrDict.keys
    If IsArray(mgrs) Then SortVariantStringArray mgrs Else mgrs = Array()
 
-   Dim markets As Variant
-   markets = marketDict.keys
-   If IsArray(markets) Then SortVariantStringArray markets Else markets = Array()
-
-    PrepareHelperCodeLists fundDict, funds, mgrDict, mgrs, marketDict, markets
+    PrepareHelperCodeLists fundDict, funds, mgrDict, mgrs
 
   
 
@@ -637,8 +627,6 @@ Public Sub BuildSnapshot()
     rowPtr = BuildStrFundTable(wsSnap, fundDict, funds, rowPtr)
     rowPtr = rowPtr + 1
     rowPtr = BuildStrManagerTable(wsSnap, mgrs, rowPtr)
-    rowPtr = rowPtr + 1
-    rowPtr = BuildStrMarketTable(wsSnap, markets, rowPtr)
     
 ' Format overall sheet (no .Select calls)
 With wsSnap
@@ -971,117 +959,6 @@ Private Function BuildStrManagerTable(ws As Worksheet, mgrs As Variant, startRow
 End Function
 
 
-Private Sub WriteStrMarketHeader(ws As Worksheet, topRow As Long, startCol As Long, segments As Variant, metrics As Variant)
-    Const RED_HEX As String = "E03C31"
-    Dim red&: red = ColorHex(RED_HEX)
-    Dim metricsPerSeg&: metricsPerSeg = UBound(metrics) - LBound(metrics) + 1
-    Dim lastCol&: lastCol = startCol + (UBound(segments) - LBound(segments) + 1) * metricsPerSeg - 1
-
-    Dim hdr1 As Range, hdr2 As Range
-    Set hdr1 = ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow, lastCol))
-    Set hdr2 = ws.Range(ws.Cells(topRow + 1, 2), ws.Cells(topRow + 1, lastCol))
-
-    With hdr1
-        .Interior.Color = red: .Font.Color = vbWhite: .Font.Bold = True: .Font.Size = 13: .RowHeight = 18
-    End With
-    With hdr2
-        .Interior.Color = red: .Font.Color = vbWhite: .Font.Bold = True: .Font.Size = 13: .RowHeight = 35: .WrapText = True
-    End With
-
-    ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow + 1, 2)).Merge
-    ws.Cells(topRow, 2).Value = "Market"
-    With ws.Range(ws.Cells(topRow, 2), ws.Cells(topRow + 1, 2))
-        .HorizontalAlignment = xlLeft
-        .VerticalAlignment = xlCenter
-    End With
-
-    Dim s&, secStart&, secEnd&, m&
-    secStart = startCol
-    For s = LBound(segments) To UBound(segments)
-        secEnd = secStart + metricsPerSeg - 1
-        ws.Range(ws.Cells(topRow, secStart), ws.Cells(topRow, secEnd)).ClearContents
-        ws.Cells(topRow, secStart).Value = segments(s)
-        With ws.Range(ws.Cells(topRow, secStart), ws.Cells(topRow, secEnd))
-            .MergeCells = False
-            .HorizontalAlignment = xlCenterAcrossSelection
-            .VerticalAlignment = xlCenter
-            .Borders.LineStyle = xlContinuous
-        End With
-        For m = LBound(metrics) To UBound(metrics)
-            ws.Cells(topRow + 1, secStart + (m - LBound(metrics))).Value = metrics(m)
-            With ws.Cells(topRow + 1, secStart + (m - LBound(metrics)))
-                .HorizontalAlignment = xlCenter
-                .VerticalAlignment = xlCenter
-            End With
-        Next m
-        secStart = secEnd + 1
-    Next s
-
-    ws.Columns(2).ColumnWidth = 28
-End Sub
-
-Private Sub WriteSTRMarketFormulas(ws As Worksheet, r As Long, codeOrName As String, startCol As Long, segments As Variant, metrics As Variant)
-    Dim dateExpr As String
-    dateExpr = "EOMONTH(DATE(Snap_YearNum,Snap_MonthNum,1),0)"
-
-    Dim s&, m&, col&
-    col = startCol
-    For s = LBound(segments) To UBound(segments)
-        For m = LBound(metrics) To UBound(metrics)
-            Dim metric As String: metric = metrics(m)
-            Dim fml As String
-            fml = "=SP.STR(INDEX(" & codeOrName & ",1)," & dateExpr & ",""month"",""" & metric & """,""Market Scale"",""" & segments(s) & """)"
-            ws.Cells(r, col).Formula = fml
-            If StrMetricIsCurrency(metric) Then
-                ws.Cells(r, col).NumberFormat = NF_CURR
-            ElseIf StrMetricIsPercent(metric) Then
-                If InStr(1, metric, "% Chg", vbTextCompare) > 0 Or _
-                   InStr(1, metric, "% Change", vbTextCompare) > 0 Then
-                    ws.Cells(r, col).NumberFormat = NF_PCT_WHOLE
-                Else
-                    ws.Cells(r, col).NumberFormat = NF_PCT
-                End If
-            Else
-                ws.Cells(r, col).NumberFormat = NF_DEC
-            End If
-            col = col + 1
-        Next m
-    Next s
-End Sub
-
-Private Function BuildStrMarketTable(ws As Worksheet, markets As Variant, startRow As Long) As Long
-    Dim rowPtr&: rowPtr = startRow
-    Dim startCol&: startCol = 6
-    Dim segments As Variant: segments = Array("Total", "Transient", "Group", "Contract")
-    Dim metrics As Variant: metrics = Array("Occ", "Occ % Chg", "ADR", "ADR % Chg", "RevPAR", "RevPAR % Chg")
-    Dim secCols&: secCols = UBound(metrics) - LBound(metrics) + 1
-    Dim lastCol&: lastCol = startCol + (UBound(segments) - LBound(segments) + 1) * secCols - 1
-
-    WriteStrMarketHeader ws, rowPtr, startCol, segments, metrics
-    Dim dataFirstRow&: dataFirstRow = rowPtr + 2
-    rowPtr = dataFirstRow
-
-    Dim i As Long
-    If IsArray(markets) Then
-        For i = LBound(markets) To UBound(markets)
-            Dim market As String: market = CStr(markets(i))
-            Dim codesName$: codesName = "CodesMarket_" & SanitizeName(market)
-            ws.Cells(rowPtr, 2).Value = market
-            ws.Cells(rowPtr, 2).Font.Bold = True
-            WriteSTRMarketFormulas ws, rowPtr, codesName, startCol, segments, metrics
-            rowPtr = rowPtr + 1
-        Next i
-    End If
-
-    ws.Range(ws.Cells(dataFirstRow, 2), ws.Cells(rowPtr - 1, lastCol)).Font.Size = 12
-
-    Dim tableTop&: tableTop = dataFirstRow - 2
-    ApplyStrSeparators ws, tableTop, rowPtr - 1, startCol, Array(secCols, secCols, secCols, secCols)
-    ApplyStrDotDividers ws, tableTop, rowPtr - 1, startCol, _
-        UBound(segments) - LBound(segments) + 1, secCols
-
-    BuildStrMarketTable = rowPtr
-End Function
 
 
 Private Sub PutVariance(tgt As Range, ws As Worksheet, r As Long, ByVal metric As String, startCol As Long, leftBand As String, rightBand As String)
@@ -1196,7 +1073,7 @@ End Function
 
 ' ============== Helper code lists for SP.FINANCIALS_AGG ==============
 
-Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict As Object, mgrs As Variant, marketDict As Object, markets As Variant)
+Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict As Object, mgrs As Variant)
     Dim wsH As Worksheet: Set wsH = Worksheets(SH_HELP)
     wsH.Cells.Clear
 
@@ -1318,42 +1195,6 @@ Private Sub PrepareHelperCodeLists(fundDict As Object, funds As Variant, mgrDict
                 r = r + 1
             End If
         Next m
-    End If
-
-    ' Market code lists
-    Dim hasMarkets As Boolean
-    On Error Resume Next: hasMarkets = (IsArray(markets) And UBound(markets) >= LBound(markets)): On Error GoTo 0
-    If hasMarkets Then
-        Dim mk As Long
-        For mk = LBound(markets) To UBound(markets)
-            Dim market As String: market = CStr(markets(mk))
-            If marketDict.exists(market) Then
-                Dim collMk As Collection: Set collMk = marketDict(market)
-                wsH.Cells(r, 1).Value = "Market: " & market
-                wsH.Cells(r, 1).Font.Bold = True
-                r = r + 1
-                Dim startMk As Long: startMk = r
-                Dim iMk As Long
-                For iMk = 1 To collMk.Count
-                    Dim codeMk As String
-                    codeMk = Trim$(CStr(collMk(iMk)(1)))
-                    If Len(codeMk) > 0 Then
-                        wsH.Cells(r, 1).Value = codeMk
-                        r = r + 1
-                    End If
-                Next iMk
-                Dim nmMarket As String: nmMarket = "CodesMarket_" & SanitizeName(market)
-                On Error Resume Next
-                ThisWorkbook.Names(nmMarket).Delete
-                On Error GoTo 0
-                If r > startMk Then
-                    ThisWorkbook.Names.Add Name:=nmMarket, RefersTo:=wsH.Range(wsH.Cells(startMk, 1), wsH.Cells(r - 1, 1))
-                Else
-                    ThisWorkbook.Names.Add Name:=nmMarket, RefersTo:=wsH.Range("A1:A1")
-                End If
-                r = r + 1
-            End If
-        Next mk
     End If
 
     wsH.Visible = xlSheetHidden
