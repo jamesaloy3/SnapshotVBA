@@ -1226,7 +1226,7 @@ Private Sub EnsureSheetsAndNames()
 
 End Sub
 
-Private Sub EnsureUsaliMap()
+Public Sub EnsureUsaliMap()
     ' Auto-build "USALI Map" from the tenant's "Usali Reference" spill
     Dim wsMap As Worksheet, wsRef As Worksheet, refRng As Range
     Dim headers As Range, usaliCol As Long
@@ -1352,7 +1352,7 @@ Private Sub AddMonthValidation(tgt As Range)
     End With
 End Sub
 
-Private Function SpillOrRegion(ws As Worksheet) As Range
+Public Function SpillOrRegion(ws As Worksheet) As Range
     On Error Resume Next
     Set SpillOrRegion = ws.Range("A1#")
     If SpillOrRegion Is Nothing Then
@@ -1361,7 +1361,7 @@ Private Function SpillOrRegion(ws As Worksheet) As Range
     End If
 End Function
 
-Private Function FindHeaderCol(rng As Range, headerText As String) As Long
+Public Function FindHeaderCol(rng As Range, headerText As String) As Long
     Dim c As Range
     For Each c In rng.Rows(1).Cells
         If Trim$(LCase$(c.Value)) = Trim$(LCase$(headerText)) Then
@@ -1381,13 +1381,13 @@ End Sub
 
 ' ============== Utilities ==============
 
-Private Function SheetExists(name As String) As Boolean
+Public Function SheetExists(name As String) As Boolean
     On Error Resume Next
     SheetExists = Not Worksheets(name) Is Nothing
     On Error GoTo 0
 End Function
 
-Private Sub AddOrReplaceName(nm As String, tgt As Range)
+Public Sub AddOrReplaceName(nm As String, tgt As Range)
    
     ' Remove any sheet-scoped duplicates everywhere
     KillAllSheetScoped nm
@@ -1398,7 +1398,7 @@ Private Sub AddOrReplaceName(nm As String, tgt As Range)
 End Sub
 
 
-Private Function SanitizeName(s As String) As String
+Public Function SanitizeName(s As String) As String
     Dim t As String
     Dim i As Long, ch As String
 
@@ -1419,7 +1419,7 @@ Private Function SanitizeName(s As String) As String
     SanitizeName = t
 End Function
 
-Private Function Nz(v As Variant, Optional dflt As String = "") As String
+Public Function Nz(v As Variant, Optional dflt As String = "") As String
     If IsError(v) Then
         Nz = dflt
         Exit Function
@@ -1593,7 +1593,7 @@ Private Sub EnsureNamesForInput()
     ThisWorkbook.Names.Add Name:="MonthNum", _
         RefersTo:="=MATCH(Input!B1,{""January"",""February"",""March"",""April"",""May"",""June"",""July"",""August"",""September"",""October"",""November"",""December""},0)"
 End Sub
-Private Sub KillAllSheetScoped(ByVal nm As String)
+Public Sub KillAllSheetScoped(ByVal nm As String)
     Dim sh As Worksheet
     For Each sh In ThisWorkbook.Worksheets
         On Error Resume Next
