@@ -4,9 +4,14 @@ Option Explicit
 Private Const SH_PROPS As String = "My Properties"
 Private Const SH_USALI As String = "Usali Reference"
 Private Const SH_MAP As String = "USALI Map"
+Private Const SH_INPUT As String = "CFV Input"
 
 Private Const NAME_USALI_DISPLAY As String = "UsaliMap_Display"
 Private Const NAME_USALI_CODE As String = "UsaliMap_Code"
+Private Const NAME_CFV_MONTH As String = "CFV_Month"
+Private Const NAME_CFV_MET1 As String = "CFV_Metric1"
+Private Const NAME_CFV_MET2 As String = "CFV_Metric2"
+Private Const NAME_CFV_MET3 As String = "CFV_Metric3"
 
 ' Main entry point
 Public Sub BuildCashForecastVariance()
@@ -22,6 +27,20 @@ Public Sub BuildCashForecastVariance()
     On Error GoTo CleanFail
 
     EnsureUsaliMap
+    EnsureCfvInputSheet
+
+    Dim monthName As String
+    monthName = Nz(Range(NAME_CFV_MONTH).Value)
+
+    Dim mCode(1 To 3) As String, mDisp(1 To 3) As String
+    mCode(1) = Nz(Range(NAME_CFV_MET1).Value)
+    mCode(2) = Nz(Range(NAME_CFV_MET2).Value)
+    mCode(3) = Nz(Range(NAME_CFV_MET3).Value)
+
+    Dim i As Long
+    For i = 1 To 3
+        mDisp(i) = UsaliDisplayFromCode(mCode(i))
+    Next i
 
     Dim props As Collection
     Set props = GetHotelList()
@@ -42,11 +61,12 @@ Public Sub BuildCashForecastVariance()
         LocalizeCFVNames ws
         ws.Range("HotelName").Value = CStr(prop(0))
         ws.Range("PropCode").Value = CStr(prop(1))
-        ws.Range("TimeAgg").Value = "Total Year"
+        ws.Range("TimeAgg").Value = "Month"
         ws.Range("RYear_YYYY").Value = Year(Date)
-        FillMetric ws, "Metric1_DisplayName", "Metric1_Values"
-        FillMetric ws, "Metric2_DisplayName", "Metric2_Values"
-        FillMetric ws, "Metric3_DisplayName", "Metric3_Values"
+        ws.Range("Month_MMMM").Value = monthName
+        ws.Range("Metric1_DisplayName").Value = mDisp(1)
+        ws.Range("Metric2_DisplayName").Value = mDisp(2)
+        ws.Range("Metric3_DisplayName").Value = mDisp(3)
     Next prop
 
     tplWB.Close SaveChanges:=False
@@ -64,20 +84,6 @@ CleanFail:
     GoTo CleanExit
 End Sub
 
-' Fill a metric value range with SP.FINANCIALS formulas
-Private Sub FillMetric(ws As Worksheet, displayName As String, valueName As String)
-    Dim dispCell As Range, valRng As Range, verRng As Range
-    Set dispCell = ws.Range(displayName)
-    Set valRng = ws.Range(valueName)
-    Set verRng = ws.Range("Version")
-
-    Dim baseFormula As String
-    baseFormula = "=SP.FINANCIALS(PropCode,INDEX(" & NAME_USALI_CODE & ",MATCH(" & dispCell.Address(False, False) & "," & NAME_USALI_DISPLAY & ",0)),TimeAgg,RYear_YYYY,"
-    Dim i As Long
-    For i = 1 To valRng.Rows.Count
-        valRng.Cells(i, 1).Formula = baseFormula & verRng.Cells(i, 1).Address(False, False) & ")"
-    Next i
-End Sub
 
 ' Convert copied template names to sheet-scoped names
 Private Sub LocalizeCFVNames(ws As Worksheet)
@@ -192,6 +198,68 @@ Private Function SanitizeName(s As String) As String
     If Len(t) = 0 Then t = "NA"
     If Not (Left$(t, 1) Like "[A-Za-z_]") Then t = "_" & t
     SanitizeName = t
+End Function
+
+Private Sub EnsureCfvInputSheet()
+    Dim ws As Worksheet
+    If Not SheetExists(SH_INPUT) Then
+        Set ws = Worksheets.Add(Before:=Worksheets(1))
+        ws.Name = SH_INPUT
+        ws.Range("A1").Value = "Month"
+        ws.Range("A2").Value = "Metric 1 (USALI)"
+        ws.Range("A3").Value = "Metric 2 (USALI)"
+        ws.Range("A4").Value = "Metric 3 (USALI)"
+    Else
+        Set ws = Worksheets(SH_INPUT)
+    End If
+
+    With ws.Range("B1")
+        .Validation.Delete
+        .Validation.Add Type:=xlValidateList, _
+            AlertStyle:=xlValidAlertStop, _
+            Formula1:=Join(Array("January","February","March","April","May","June","July","August","September","October","November","December"), ",")
+    End With
+
+    With ws.Range("B2:B4")
+        .Validation.Delete
+        .Validation.Add Type:=xlValidateList, _
+            AlertStyle:=xlValidAlertStop, _
+            Formula1:="=" & NAME_USALI_CODE
+    End With
+
+    AddOrReplaceName NAME_CFV_MONTH, ws.Range("B1")
+    AddOrReplaceName NAME_CFV_MET1, ws.Range("B2")
+    AddOrReplaceName NAME_CFV_MET2, ws.Range("B3")
+    AddOrReplaceName NAME_CFV_MET3, ws.Range("B4")
+
+    Dim btn As Button, exists As Boolean
+    For Each btn In ws.Buttons
+        If btn.OnAction = "BuildCashForecastVariance" Then
+            exists = True
+            Exit For
+        End If
+    Next btn
+    If Not exists Then
+        Set btn = ws.Buttons.Add(ws.Range("A6").Left, ws.Range("A6").Top, 150, 30)
+        btn.Caption = "Generate Report"
+        btn.OnAction = "BuildCashForecastVariance"
+    End If
+End Sub
+
+Private Function UsaliDisplayFromCode(code As String) As String
+    On Error GoTo Clean
+    Dim codes As Range, displays As Range, idx As Variant
+    Set codes = Range(NAME_USALI_CODE)
+    Set displays = Range(NAME_USALI_DISPLAY)
+    idx = Application.Match(code, codes, 0)
+    If Not IsError(idx) Then
+        UsaliDisplayFromCode = displays.Cells(CLng(idx), 1).Value
+    Else
+        UsaliDisplayFromCode = code
+    End If
+    Exit Function
+Clean:
+    UsaliDisplayFromCode = code
 End Function
 
 Private Sub EnsureUsaliMap()
