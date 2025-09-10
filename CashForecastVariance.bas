@@ -33,11 +33,13 @@ Public Sub BuildCashForecastVariance()
 
     Dim monthName As String
     monthName = Nz(Range(NAME_CFV_MONTH).Value)
-    Dim timeAgg As String
+    Dim timeAgg As String, displayMonth As String
     If StrComp(monthName, "Total Year", vbTextCompare) = 0 Then
         timeAgg = "Total Year"
+        displayMonth = Format(DateAdd("m", -1, Date), "MMMM")
     Else
         timeAgg = "Month"
+        displayMonth = monthName
     End If
 
     Dim mCode(1 To 3) As String, mDisp(1 To 3) As String
@@ -74,10 +76,11 @@ Public Sub BuildCashForecastVariance()
         ws.Range("PropCode").Value = CStr(prop(1))
         ws.Range("TimeAgg").Value = timeAgg
         ws.Range("RYear_YYYY").Value = Year(Date)
-        ws.Range("Month_MMMM").Value = monthName
+        ws.Range("Month_MMMM").Value = displayMonth
         ws.Range("Metric1_DisplayName").Value = mDisp(1)
         ws.Range("Metric2_DisplayName").Value = mDisp(2)
         ws.Range("Metric3_DisplayName").Value = mDisp(3)
+        ws.Columns(3).Hidden = True
     Next prop
 
     tplWB.Close SaveChanges:=False
