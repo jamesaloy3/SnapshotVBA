@@ -6,8 +6,10 @@ Private Const SH_USALI As String = "Usali Reference"
 Private Const SH_MAP As String = "USALI Map"
 Private Const SH_INPUT As String = "CFV Input"
 
-Private Const NAME_USALI_DISPLAY As String = "UsaliMap_Display"
-Private Const NAME_USALI_CODE As String = "UsaliMap_Code"
+' Expose USALI mapping names globally so other modules can access them
+Public Const NAME_USALI_DISPLAY As String = "UsaliMap_Display"
+Public Const NAME_USALI_CODE As String = "UsaliMap_Code"
+
 Private Const NAME_CFV_MONTH As String = "CFV_Month"
 Private Const NAME_CFV_MET1 As String = "CFV_Metric1"
 Private Const NAME_CFV_MET2 As String = "CFV_Metric2"
@@ -51,6 +53,9 @@ Public Sub BuildCashForecastVariance()
     Dim props As Collection
     Set props = GetHotelList()
     If props Is Nothing Then GoTo CleanFail
+
+    ' Remove any previously generated report sheets to avoid name collisions
+    DeleteExistingCfvReports props
 
     Dim tplPath As String
     tplPath = ThisWorkbook.Path & Application.PathSeparator & "CashForecastVariance_Template.xlsx"
@@ -109,6 +114,23 @@ Private Sub LocalizeCFVNames(ws As Worksheet)
         ws.Names.Add Name:=nmObj.Name, RefersTo:=nmObj.RefersTo
         nmObj.Delete
     Next nmName
+End Sub
+
+' Delete any existing report sheets matching the property names
+Private Sub DeleteExistingCfvReports(props As Collection)
+    Dim prop As Variant, shName As String
+    Dim prevAlerts As Boolean
+    prevAlerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+
+    For Each prop In props
+        shName = Left$(SanitizeName(CStr(prop(0))), 31)
+        If SheetExists(shName) Then
+            Worksheets(shName).Delete
+        End If
+    Next prop
+
+    Application.DisplayAlerts = prevAlerts
 End Sub
 
 ' Build list of hotels from My Properties
@@ -179,18 +201,25 @@ Private Sub EnsureCfvInputSheet()
     AddOrReplaceName NAME_CFV_MET2, ws.Range("B3")
     AddOrReplaceName NAME_CFV_MET3, ws.Range("B4")
 
-    Dim btn As Button, exists As Boolean
+    Dim btn As Button, buildBtn As Button
     For Each btn In ws.Buttons
-        If btn.OnAction = "BuildCashForecastVariance" Then
-            exists = True
-            Exit For
+        If InStr(1, btn.OnAction, "BuildCashForecastVariance", vbTextCompare) > 0 Then
+            If buildBtn Is Nothing Then
+                Set buildBtn = btn
+                buildBtn.Name = "btnCfvGenerateReport"
+            Else
+                btn.Delete
+            End If
         End If
     Next btn
-    If Not exists Then
-        Set btn = ws.Buttons.Add(ws.Range("A6").Left, ws.Range("A6").Top, 150, 30)
-        btn.Caption = "Generate Report"
-        btn.OnAction = "BuildCashForecastVariance"
+    If buildBtn Is Nothing Then
+        Set buildBtn = ws.Buttons.Add(ws.Range("A6").Left, ws.Range("A6").Top, 150, 30)
     End If
+    With buildBtn
+        .Caption = "Generate Report"
+        .OnAction = "BuildCashForecastVariance"
+        .Name = "btnCfvGenerateReport"
+    End With
 End Sub
 
 Private Function UsaliDisplayFromCode(code As String) As String
