@@ -35,7 +35,7 @@ Public Sub BuildCashForecastVariance()
     monthName = Nz(Range(NAME_CFV_MONTH).Value)
     Dim timeAgg As String
     If StrComp(monthName, "Total Year", vbTextCompare) = 0 Then
-        timeAgg = "Year"
+        timeAgg = "Total Year"
     Else
         timeAgg = "Month"
     End If
