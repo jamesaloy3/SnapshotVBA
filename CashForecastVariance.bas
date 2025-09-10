@@ -49,6 +49,11 @@ Public Sub BuildCashForecastVariance()
     Dim tplPath As String
     tplPath = ThisWorkbook.Path & Application.PathSeparator & "CashForecastVariance_Template.xlsx"
     Dim tplWB As Workbook
+    ' Ensure the template exists before trying to open it
+    If Dir(tplPath) = "" Then
+        MsgBox "Template workbook not found: " & tplPath, vbExclamation
+        GoTo CleanFail
+    End If
     Set tplWB = Workbooks.Open(Filename:=tplPath, ReadOnly:=True)
     Dim tplSheet As Worksheet
     Set tplSheet = tplWB.Worksheets(1)
@@ -78,9 +83,12 @@ CleanExit:
     Exit Sub
 
 CleanFail:
-    MsgBox "Failed to build Cash Forecast Variance report", vbExclamation
+    Dim errMsg As String
+    errMsg = Err.Description
+    If Len(errMsg) = 0 Then errMsg = "Unknown error"
+    MsgBox "Failed to build Cash Forecast Variance report: " & errMsg, vbExclamation
     On Error Resume Next
-    tplWB.Close SaveChanges:=False
+    If Not tplWB Is Nothing Then tplWB.Close SaveChanges:=False
     GoTo CleanExit
 End Sub
 
