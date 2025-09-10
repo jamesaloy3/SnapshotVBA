@@ -141,63 +141,6 @@ Private Function GetHotelList() As Collection
     Set GetHotelList = col
 End Function
 
-' ==== Helpers copied from Snapshot module ====
-
-Private Function SpillOrRegion(ws As Worksheet) As Range
-    On Error Resume Next
-    Set SpillOrRegion = ws.Range("A1#")
-    If SpillOrRegion Is Nothing Then
-        On Error GoTo 0
-        Set SpillOrRegion = ws.Range("A1").CurrentRegion
-    End If
-End Function
-
-Private Function FindHeaderCol(rng As Range, headerText As String) As Long
-    Dim c As Range
-    For Each c In rng.Rows(1).Cells
-        If Trim$(LCase$(c.Value)) = Trim$(LCase$(headerText)) Then
-            FindHeaderCol = c.Column - rng.Column + 1
-            Exit Function
-        End If
-    Next
-    FindHeaderCol = 0
-End Function
-
-Private Function Nz(v As Variant, Optional dflt As String = "") As String
-    If IsError(v) Then
-        Nz = dflt
-        Exit Function
-    End If
-    On Error GoTo Clean
-    Nz = Trim$(CStr(v))
-    If Len(Nz) = 0 Then Nz = dflt
-    Exit Function
-Clean:
-    Nz = dflt
-End Function
-
-Private Function SheetExists(name As String) As Boolean
-    On Error Resume Next
-    SheetExists = Not Worksheets(name) Is Nothing
-    On Error GoTo 0
-End Function
-
-Private Function SanitizeName(s As String) As String
-    Dim t As String
-    Dim i As Long, ch As String
-    For i = 1 To Len(s)
-        ch = Mid$(s, i, 1)
-        If ch Like "[A-Za-z0-9_]" Then
-            t = t & ch
-        Else
-            t = t & "_"
-        End If
-    Next i
-    If Len(t) = 0 Then t = "NA"
-    If Not (Left$(t, 1) Like "[A-Za-z_]") Then t = "_" & t
-    SanitizeName = t
-End Function
-
 Private Sub EnsureCfvInputSheet()
     Dim ws As Worksheet
     If Not SheetExists(SH_INPUT) Then
@@ -326,22 +269,5 @@ Private Sub EnsureUsaliMap()
 
     AddOrReplaceName NAME_USALI_DISPLAY, wsMap.Range("A:A")
     AddOrReplaceName NAME_USALI_CODE, wsMap.Range("B:B")
-End Sub
-
-Private Sub AddOrReplaceName(nm As String, tgt As Range)
-    KillAllSheetScoped nm
-    On Error Resume Next
-    ThisWorkbook.Names(nm).Delete
-    On Error GoTo 0
-    ThisWorkbook.Names.Add Name:=nm, RefersTo:=tgt
-End Sub
-
-Private Sub KillAllSheetScoped(ByVal nm As String)
-    Dim sh As Worksheet
-    For Each sh In ThisWorkbook.Worksheets
-        On Error Resume Next
-        sh.Names(nm).Delete
-        On Error GoTo 0
-    Next sh
 End Sub
 
