@@ -87,23 +87,21 @@ End Sub
 
 ' Convert copied template names to sheet-scoped names
 Private Sub LocalizeCFVNames(ws As Worksheet)
-    Dim nmList As Variant
-    nmList = Array("ReportArea", "HotelName", "PropCode", _
-                    "Metric1_DisplayName", "Metric1_Values", _
-                    "Metric2_DisplayName", "Metric2_Values", _
-                    "Metric3_DisplayName", "Metric3_Values", _
-                    "Version", "TimeAgg", "RYear_YYYY", "Month_MMMM")
-    Dim nmName As Variant, nmObj As Name
-    For Each nmName In nmList
-        On Error Resume Next
-        Set nmObj = ThisWorkbook.Names(CStr(nmName))
-        On Error GoTo 0
-        If Not nmObj Is Nothing Then
-            Dim refSheet As String
-            refSheet = Split(Split(nmObj.RefersTo, "'")(1), "'")(0)
-            ws.Names.Add Name:=CStr(nmName), RefersTo:=Replace(nmObj.RefersTo, "'" & refSheet & "'!", "'" & ws.Name & "'!")
-            nmObj.Delete
+    Dim nmObj As Name, nmName As Variant
+    Dim toProcess As New Collection
+
+    ' Collect workbook-level names referring to this sheet
+    For Each nmObj In ThisWorkbook.Names
+        If InStr(1, nmObj.RefersTo, "'" & ws.Name & "'!", vbTextCompare) > 0 Then
+            toProcess.Add nmObj.Name
         End If
+    Next nmObj
+
+    ' Localize each name to the worksheet scope
+    For Each nmName In toProcess
+        Set nmObj = ThisWorkbook.Names(CStr(nmName))
+        ws.Names.Add Name:=nmObj.Name, RefersTo:=nmObj.RefersTo
+        nmObj.Delete
     Next nmName
 End Sub
 
