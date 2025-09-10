@@ -31,6 +31,12 @@ Public Sub BuildCashForecastVariance()
 
     Dim monthName As String
     monthName = Nz(Range(NAME_CFV_MONTH).Value)
+    Dim timeAgg As String
+    If StrComp(monthName, "Total Year", vbTextCompare) = 0 Then
+        timeAgg = "Year"
+    Else
+        timeAgg = "Month"
+    End If
 
     Dim mCode(1 To 3) As String, mDisp(1 To 3) As String
     mCode(1) = Nz(Range(NAME_CFV_MET1).Value)
@@ -61,7 +67,7 @@ Public Sub BuildCashForecastVariance()
         LocalizeCFVNames ws
         ws.Range("HotelName").Value = CStr(prop(0))
         ws.Range("PropCode").Value = CStr(prop(1))
-        ws.Range("TimeAgg").Value = "Month"
+        ws.Range("TimeAgg").Value = timeAgg
         ws.Range("RYear_YYYY").Value = Year(Date)
         ws.Range("Month_MMMM").Value = monthName
         ws.Range("Metric1_DisplayName").Value = mDisp(1)
@@ -158,7 +164,7 @@ Private Sub EnsureCfvInputSheet()
         .Validation.Delete
         .Validation.Add Type:=xlValidateList, _
             AlertStyle:=xlValidAlertStop, _
-            Formula1:=Join(Array("January","February","March","April","May","June","July","August","September","October","November","December"), ",")
+            Formula1:=Join(Array("January","February","March","April","May","June","July","August","September","October","November","December","Total Year"), ",")
     End With
 
     With ws.Range("B2:B4")
