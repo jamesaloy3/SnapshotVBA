@@ -8,6 +8,7 @@ Private Const SH_INPUT As String = "CFV Input"
 
 ' Expose USALI mapping names globally so other modules can access them
 Public Const NAME_USALI_DISPLAY As String = "UsaliMap_Display"
+Public Const NAME_USALI_CFV_DISPLAY As String = "UsaliMap_CFV_Display"
 Public Const NAME_USALI_CODE As String = "UsaliMap_Code"
 
 Private Const NAME_CFV_MONTH As String = "CFV_Month"
@@ -49,7 +50,7 @@ Public Sub BuildCashForecastVariance()
 
     Dim i As Long
     For i = 1 To 3
-        mDisp(i) = UsaliDisplayFromCode(mCode(i))
+        mDisp(i) = CfvDisplayFromCode(mCode(i))
     Next i
 
     Dim props As Collection
@@ -241,6 +242,22 @@ Clean:
     UsaliDisplayFromCode = code
 End Function
 
+Private Function CfvDisplayFromCode(code As String) As String
+    On Error GoTo Clean
+    Dim codes As Range, displays As Range, idx As Variant
+    Set codes = Range(NAME_USALI_CODE)
+    Set displays = Range(NAME_USALI_CFV_DISPLAY)
+    idx = Application.Match(code, codes, 0)
+    If Not IsError(idx) Then
+        CfvDisplayFromCode = displays.Cells(CLng(idx), 1).Value
+    Else
+        CfvDisplayFromCode = code
+    End If
+    Exit Function
+Clean:
+    CfvDisplayFromCode = code
+End Function
+
 Private Sub EnsureUsaliMap()
     Dim wsMap As Worksheet, wsRef As Worksheet, refRng As Range
     Dim headers As Range, usaliCol As Long
@@ -260,26 +277,27 @@ Private Sub EnsureUsaliMap()
     wsMap.Cells.Clear
 
     wsMap.Range("A1").Value = "DisplayMetric"
-    wsMap.Range("B1").Value = "USALI"
-    wsMap.Range("C1").Value = "Notes"
+    wsMap.Range("B1").Value = "CFV_DisplayMetric"
+    wsMap.Range("C1").Value = "USALI"
+    wsMap.Range("D1").Value = "Notes"
 
     Dim pairs As Variant
     pairs = Array( _
-        Array("Occ", "Total Occ % - 100"), _
-        Array("ADR", "Total ADR - 100"), _
-        Array("RevPAR", "RevPAR - 100"), _
-        Array("Total Rev (000's)", "Total Revenue - 000"), _
-        Array("NOI (000's)", "Total Net Operating Income - 000"), _
-        Array("NOI Margin", "Total Net Operating Income % - 000"), _
-        Array("GOP (000's)", "Total Hotel GOP - 000"), _
-        Array("GOP Margin", "Total Hotel GOP % - 000"), _
-        Array("EBITDA (000's)", "Total EBITDA - 000"), _
-        Array("EBITDA Margin", "Total EBITDA % - 000"), _
-        Array("IBNO (000's)", "Total Income Before Non-Operating - 000"), _
-        Array("Hotel NOI (000's)", "Hotel Net Operating Income - 000"), _
-        Array("Paid Occ %", "Paid Occ % - 100"), _
-        Array("Total Arrivals", "Total Arrivals - 100"), _
-        Array("Total Hours Worked (000's)", "Total Hours Worked - 000") _
+        Array("Occ", "Occ", "Total Occ % - 100"), _
+        Array("ADR", "ADR", "Total ADR - 100"), _
+        Array("RevPAR", "RevPAR", "RevPAR - 100"), _
+        Array("Total Rev (000's)", "Total Rev", "Total Revenue - 000"), _
+        Array("NOI (000's)", "NOI", "Total Net Operating Income - 000"), _
+        Array("NOI Margin", "NOI Margin", "Total Net Operating Income % - 000"), _
+        Array("GOP (000's)", "GOP", "Total Hotel GOP - 000"), _
+        Array("GOP Margin", "GOP Margin", "Total Hotel GOP % - 000"), _
+        Array("EBITDA (000's)", "EBITDA", "Total EBITDA - 000"), _
+        Array("EBITDA Margin", "EBITDA Margin", "Total EBITDA % - 000"), _
+        Array("IBNO (000's)", "IBNO", "Total Income Before Non-Operating - 000"), _
+        Array("Hotel NOI (000's)", "Hotel NOI", "Hotel Net Operating Income - 000"), _
+        Array("Paid Occ %", "Paid Occ %", "Paid Occ % - 100"), _
+        Array("Total Arrivals", "Total Arrivals", "Total Arrivals - 100"), _
+        Array("Total Hours Worked (000's)", "Total Hours Worked", "Total Hours Worked - 000") _
     )
 
     Dim refSet As Object
@@ -293,19 +311,22 @@ Private Sub EnsureUsaliMap()
     Next r
 
     Dim outRow As Long: outRow = 2
-    Dim i As Long, disp As String, usali As String
+    Dim i As Long, disp As String, cfvDisp As String, usali As String
     For i = LBound(pairs) To UBound(pairs)
         disp = pairs(i)(0)
-        usali = pairs(i)(1)
+        cfvDisp = pairs(i)(1)
+        usali = pairs(i)(2)
         wsMap.Cells(outRow, 1).Value = disp
-        wsMap.Cells(outRow, 2).Value = usali
+        wsMap.Cells(outRow, 2).Value = cfvDisp
+        wsMap.Cells(outRow, 3).Value = usali
         If Not refSet.exists(usali) Then
-            wsMap.Cells(outRow, 3).Value = "NOT FOUND in Usali Reference"
+            wsMap.Cells(outRow, 4).Value = "NOT FOUND in Usali Reference"
         End If
         outRow = outRow + 1
     Next i
 
     AddOrReplaceName NAME_USALI_DISPLAY, wsMap.Range("A:A")
-    AddOrReplaceName NAME_USALI_CODE, wsMap.Range("B:B")
+    AddOrReplaceName NAME_USALI_CFV_DISPLAY, wsMap.Range("B:B")
+    AddOrReplaceName NAME_USALI_CODE, wsMap.Range("C:C")
 End Sub
 

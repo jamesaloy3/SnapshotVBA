@@ -165,10 +165,11 @@ Data cells are formulas to `SP.FINANCIALS` (property-level) or `SP.FINANCIALS_AG
 
 * The **`USALI Map`** sheet contains two mapping blocks:
 
-  * Columns **A:C** mirror the traditional USALI mapping with headers:
+  * Columns **A:D** mirror the traditional USALI mapping with headers:
     1. `DisplayMetric`
-    2. `USALI`
-    3. `Notes` (flags “NOT FOUND in Usali Reference” if a mapping isn’t present in your tenant’s reference)
+    2. `CFV_DisplayMetric`
+    3. `USALI`
+    4. `Notes` (flags “NOT FOUND in Usali Reference” if a mapping isn’t present in your tenant’s reference)
   * Columns **E:F** provide an editable map for **STR metrics** (`STR_Display` → `STR_Code`).
 * The report headers use `DisplayMetric` (friendly names). Each data cell looks up the **USALI** code via:
 
@@ -178,7 +179,8 @@ Data cells are formulas to `SP.FINANCIALS` (property-level) or `SP.FINANCIALS_AG
 * **Add/edit rows freely** (keep the named ranges bound to the columns). The builder refreshes names every run:
 
   * `UsaliMap_Display` → column A
-  * `UsaliMap_Code` → column B
+  * `UsaliMap_CFV_Display` → column B
+  * `UsaliMap_Code` → column C
   * `StrMap_Display` → column E
   * `StrMap_Code` → column F
 
