@@ -16,9 +16,24 @@ Public Sub BuildSnapshotReportPDF()
     ApplyTablePageBreaks ws
     DoEvents
 
+    Dim yr As Long, mo As Long
+    On Error Resume Next
+    yr = CLng(ThisWorkbook.Names("Snap_YearNum").RefersToRange.Value)
+    mo = CLng(ThisWorkbook.Names("Snap_MonthNum").RefersToRange.Value)
+    On Error GoTo 0
+    Dim prefix As String
+    If yr > 0 And mo > 0 Then
+        prefix = Format(DateSerial(yr, mo, 1), "mmYY")
+    Else
+        prefix = Format(Now, "mmYY")
+    End If
+
+    Dim folderPath As String
+    folderPath = ThisWorkbook.Path & Application.PathSeparator & "Snapshot"
+    If Dir(folderPath, vbDirectory) = "" Then MkDir folderPath
+
     Dim pdfPath As String
-    pdfPath = ThisWorkbook.Path & Application.PathSeparator & _
-              "SnapshotReport_" & Format(Now, "yyyymmdd_hhnn") & ".pdf"
+    pdfPath = folderPath & Application.PathSeparator & prefix & "_Snapshot.pdf"
     ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=pdfPath, _
                             Quality:=xlQualityStandard, _
                             IncludeDocProperties:=True, _

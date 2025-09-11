@@ -24,11 +24,29 @@ Public Sub BuildCashForecastVariancePDF()
         arr(i) = cfvSheets(i).Name
         ApplyCfvPageSetup cfvSheets(i)
     Next i
-    
+    Dim firstSheet As Worksheet
+    Set firstSheet = cfvSheets(1)
+    Dim yr As Long, mo As Long
+    Dim monthName As String
+    On Error Resume Next
+    yr = CLng(firstSheet.Range("RYear_YYYY").Value)
+    monthName = CStr(firstSheet.Range("Month_MMMM").Value)
+    On Error GoTo 0
+    If Len(monthName) > 0 Then mo = Month(DateValue("1 " & monthName & " " & yr))
+    Dim prefix As String
+    If yr > 0 And mo > 0 Then
+        prefix = Format(DateSerial(yr, mo, 1), "mmYY")
+    Else
+        prefix = Format(Now, "mmYY")
+    End If
+
+    Dim folderPath As String
+    folderPath = ThisWorkbook.Path & Application.PathSeparator & "CashForecastVariance"
+    If Dir(folderPath, vbDirectory) = "" Then MkDir folderPath
+
     Dim pdfPath As String
-    pdfPath = ThisWorkbook.Path & Application.PathSeparator & _
-              "CashForecastVariance_" & Format(Now, "yyyymmdd_hhnn") & ".pdf"
-    
+    pdfPath = folderPath & Application.PathSeparator & prefix & "_CashForecastVariance.pdf"
+
     Dim prevSheet As Worksheet
     Set prevSheet = ActiveSheet
     ThisWorkbook.Sheets(arr).Select
