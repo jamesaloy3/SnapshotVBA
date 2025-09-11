@@ -1266,7 +1266,7 @@ Private Sub EnsureUsaliMap()
         Array("ADR", "ADR", "Total ADR - 100"), _
         Array("RevPAR", "RevPAR", "RevPAR - 100"), _
         Array("Total Rev (000's)", "Total Rev", "Total Revenue - 000"), _
-        Array("NOI (000's)", "NOI", "Total Net Operating Income - 000"), _
+        Array("NOI (000's)", "NOI", "Total EBITDA Less Reserves - 000"), _
         Array("NOI Margin", "NOI Margin", "Total Net Operating Income % - 000"), _
         Array("GOP (000's)", "GOP", "Total Hotel GOP - 000"), _
         Array("GOP Margin", "GOP Margin", "Total Hotel GOP % - 000"), _
