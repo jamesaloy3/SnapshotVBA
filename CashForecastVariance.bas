@@ -283,7 +283,7 @@ Private Sub EnsureUsaliMap()
 
     Dim pairs As Variant
     pairs = Array( _
-        Array("Occ", "Occ", "Total Rooms Sold - 100"), _
+        Array("Occ", "Occ", "Paid Occ % - 100"), _
         Array("ADR", "ADR", "Total ADR - 100"), _
         Array("RevPAR", "RevPAR", "RevPAR - 100"), _
         Array("Total Rev (000's)", "Total Rev", "Total Revenue - 000"), _
